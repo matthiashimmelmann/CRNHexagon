@@ -1,10 +1,10 @@
 module CRNHexagon
 
-import GLMakie: Point2f0, lines!, Figure, Axis, save, hidespines!, hidedecorations!, mesh!, scatter!, text!
+import GLMakie: Point2f0, lines!, Figure, Axis, save, hidespines!, hidedecorations!, mesh!, scatter!, text!, RGBA, RGB, poly!
 import HomotopyContinuation: @var, evaluate, Expression
 import LinearAlgebra: inv, det
 import ProgressBars: ProgressBar
-import Colors: distinguishable_colors, RGB, RGBA, red, green, blue
+import Colors: distinguishable_colors, red, green, blue
 import LaTeXStrings: @L_str
 
 export runTest
@@ -109,34 +109,34 @@ Here, all 16 configurations are plotted and saved. The colors are optimized with
 TODO Dissociate the individual plots from the rest to generalize this method
 =#
 function plotconfiguration(points, triangconfigurations, lineconfigurations, triangleplots1, triangleplots2, lineplot, lineplot2)
-    fourcolors = map(col -> (red(col), green(col), blue(col)), distinguishable_colors(3, [RGB(1,1,1), RGB(0,0,0)], dropseed=true, lchoices = range(20, stop=95, length=14), hchoices = range(150, stop=340, length=30)))
+    fourcolors = map(col -> (red(col), green(col), blue(col)), distinguishable_colors(4, [RGB(1,1,1), RGB(0,0,0)], dropseed=true, lchoices = range(20, stop=80, length=14), hchoices = range(150, stop=340, length=30)))
     fivecolors = map(col -> (red(col), green(col), blue(col)), distinguishable_colors(5, [RGB(1,1,1), RGB(0,0,0)], dropseed=true, lchoices = range(35, stop=70, length=14), hchoices = range(130, stop=340, length=30)))
 
     pointsForPlot = [(0,0),(1,0),(2,0),(4,1),(4,2),(3,2),(2,2),(0,1),(0,0)]
-    fig = Figure(resolution=(1200,1200))
+    fig = Figure(size=(1200,1200))
     ax = Axis(fig[1,1], aspect=1)
     hidespines!(ax)
     hidedecorations!(ax)
-    mesh!(ax,[Point2f0(pt) for pt in pointsForPlot]; color=RGBA{Float64}(0.1, 0.1, 0.1, 0.03),strokewidth=0)
+    poly!(ax,[Point2f0(pt) for pt in pointsForPlot]; color=RGBA{Float64}(0.1, 0.1, 0.1, 0.03), strokewidth=0)
     lines!(ax,[Point2f0(pt) for pt in pointsForPlot], color=:black, linewidth=10)
     scatter!(ax,[Point2f0([2,1])]; color=:red2,markersize=60)
     text!(ax,[Point2f0([2+0.1,1-0.1])], text=L"$\mu$"; color=:red2,fontsize=70)
     scatter!(ax,[Point2f0(pt) for pt in points]; color=:black, markersize=60)
-    text!(ax,[Point2f0([1+0.1,1-0.1]), Point2f0([3+0.1,1-0.1]), Point2f0([1+0.1,0+0.04]), Point2f0([3-0.05,2-0.17]), Point2f0([0+0.1,0+0.04]), Point2f0([2+0.17,0-0.05]), Point2f0([4-0.1,1-0.17]), Point2f0([4-0.3,2-0.15]), Point2f0([2-0.05,2-0.15]), Point2f0([0+0.1,1-0.1])], text=[L"$\iota_1$", L"$\iota_2$", L"$\beta_1$", L"$\beta_2$", L"$\alpha_1$", L"$\alpha_2$", L"$\alpha_3$", L"$\alpha_4$", L"$\alpha_5$", L"$\alpha_6$"]; color=:black,fontsize=70)
+    text!(ax,[Point2f0([1+0.1,1-0.1]), Point2f0([3+0.1,1-0.1]), Point2f0([1+0.1,0+0.04]), Point2f0([3-0.05,2-0.19]), Point2f0([0+0.1,0+0.04]), Point2f0([2+0.17,0-0.05]), Point2f0([4-0.1,1-0.17]), Point2f0([4-0.34,2-0.16]), Point2f0([2-0.05,2-0.16]), Point2f0([0+0.1,1-0.1])], text=[L"$\iota_1$", L"$\iota_2$", L"$\beta_1$", L"$\beta_2$", L"$\alpha_1$", L"$\alpha_2$", L"$\alpha_3$", L"$\alpha_4$", L"$\alpha_5$", L"$\alpha_6$"]; color=:black,fontsize=70)
 
-    save("NEWtriangbaseconf.png",fig)
+    save("../images/NEWtriangbaseconf.png",fig)
 
     #This method plots the configurations containing 2-dimensional simplices.
     for config in triangconfigurations
-        fig = GLMakie.Figure(resolution=(1200,1200))
+        fig = Figure(size=(1200,1200))
         ax = Axis(fig[1,1], aspect=1)
         hidespines!(ax)
         hidedecorations!(ax)
-        mesh!(ax,[Point2f0(pt) for pt in pointsForPlot]; color=RGBA{Float64}(0.1, 0.1, 0.1, 0.03),strokewidth=0)
-        mesh!(ax,[Point2f0(points[pt]) for pt in config[1]]; color=RGBA{Float64}(fourcolors[1][1], fourcolors[1][2], fourcolors[1][3], 0.2),strokewidth=0)
-        lines!(ax,[Point2f0(points[pt]) for pt in vcat(config[1],config[1][1])], color=RGBA{Float64}(fourcolors[1][1], fourcolors[1][2], fourcolors[1][3], 1),linewidth=5)
-        mesh!(ax,[Point2f0(points[pt]) for pt in config[2]]; color=RGBA{Float64}(fourcolors[2][1], fourcolors[2][2], fourcolors[2][3], 0.2),strokewidth=0)
-        lines!(ax,[Point2f0(points[pt]) for pt in vcat(config[2],config[2][1])], color=RGBA{Float64}(fourcolors[2][1], fourcolors[2][2], fourcolors[2][3], 1),linewidth=5)
+        poly!(ax,[Point2f0(pt) for pt in pointsForPlot]; color=RGBA{Float64}(0.1, 0.1, 0.1, 0.03),strokewidth=0)
+        poly!(ax,[Point2f0(points[pt]) for pt in config[1]]; color=RGBA{Float64}(fourcolors[1][1], fourcolors[1][2], fourcolors[1][3], 0.15),strokewidth=0)
+        lines!(ax,[Point2f0(points[pt]) for pt in vcat(config[1],config[1][1])], color=RGBA{Float64}(fourcolors[1][1], fourcolors[1][2], fourcolors[1][3], 1), linewidth=5)
+        poly!(ax,[Point2f0(points[pt]) for pt in config[2]]; color=RGBA{Float64}(fourcolors[3][1], fourcolors[2][2], fourcolors[2][3], 0.15),strokewidth=0)
+        lines!(ax,[Point2f0(points[pt]) for pt in vcat(config[2],config[2][1])], color=RGBA{Float64}(fourcolors[2][1], fourcolors[2][2], fourcolors[2][3], 1), linewidth=5)
         lines!(ax,[Point2f0(pt) for pt in pointsForPlot], color=:black, linewidth=10)
 
         firstcolor = RGBA{Float64}(fourcolors[3][1], fourcolors[3][2], fourcolors[3][3], 1)
@@ -185,12 +185,12 @@ function plotconfiguration(points, triangconfigurations, lineconfigurations, tri
         scatter!(ax,[Point2f0([2,1])]; color=:red2,markersize=60)
         #GLMakie.text!(ax,[GLMakie.Point2f0([2+0.05,1-0.154])], text=L"$\mu$"; color=:red2,fontsize=70)
         scatter!(ax,[Point2f0(pt) for pt in points]; color=:black,markersize=60)
-        save("NEWtriangnoline$(findfirst(t->t==config,triangconfigurations)).png",fig)
+        save("../images/NEWtriangnoline$(findfirst(t->t==config,triangconfigurations)).png",fig)
     end
 
     #This method plots the configurations containing no 2-dimensional simplices.
     for config in lineconfigurations
-        fig = Figure(resolution=(1200,1200))
+        fig = Figure(size=(1200,1200))
         ax = Axis(fig[1,1], aspect=1)
         hidespines!(ax)
         hidedecorations!(ax)
@@ -200,7 +200,7 @@ function plotconfiguration(points, triangconfigurations, lineconfigurations, tri
         greencolor = RGBA{Float64}(fivecolors[3][1], fivecolors[3][2], fivecolors[3][3], 1)
         bluecolor = RGBA{Float64}(fivecolors[4][1], fivecolors[4][2], fivecolors[4][3], 1)
         yellowcolor = RGBA{Float64}(fivecolors[5][1], fivecolors[5][2], fivecolors[5][3], 1)
-        mesh!(ax,[Point2f0(pt) for pt in pointsForPlot]; color=RGBA{Float64}(0.1, 0.1, 0.1, 0.03),strokewidth=0)
+        poly!(ax,[Point2f0(pt) for pt in pointsForPlot]; color=RGBA{Float64}(0.1, 0.1, 0.1, 0.03),strokewidth=0)
 
         if config[3]==[9,10]||config[3]==[10,9]
             lines!(ax,[Point2f0(points[pt]) for pt in [9,10]], color=secondcolor, linewidth=lw)
@@ -229,7 +229,7 @@ function plotconfiguration(points, triangconfigurations, lineconfigurations, tri
         scatter!(ax,[Point2f0([2,1])]; color=:red2,markersize=60)
         #GLMakie.text!(ax,[GLMakie.Point2f0([2+0.05,1-0.154])], text=L"$\mu$"; color=:red2,fontsize=70)
         scatter!(ax,[Point2f0(pt) for pt in points]; color=:black,markersize=60)
-        save("NEWtriangline$(14+findfirst(t->t==config,lineconfigurations)).png",fig)
+        save("../images/NEWtriangline$(14+findfirst(t->t==config,lineconfigurations)).png",fig)
     end
 end
 
@@ -243,7 +243,7 @@ true, we add 1 to `prevmodel`. If neither model recognizes nonnegativity, we add
 function runSamplingComparison(θ, κ, K, aη, bη, mcoef, θbaseline; boxsize=100, numberOfSamplingRuns=250)
     #If the file exists, we add to the previously run tests. Else, we set everything to 0.
     try
-        f = open("NEWtriangstoredsolutions$(boxsize).txt", "r")
+        f = open("../data/NEWtriangstoredsolutions$(boxsize).txt", "r")
 
         global pointnumber = parse(Int,readline(f))
         global ourmodel = [parse(Int,entry) for entry in split(readline(f)[2:end-1], ", ")]
@@ -278,7 +278,7 @@ function runSamplingComparison(θ, κ, K, aη, bη, mcoef, θbaseline; boxsize=1
         end
 
         #SAVE the data to the file `NEWtriangstoredsolutions.txt`
-        open("NEWtriangstoredsolutions$(boxsize).txt", "w") do file
+        open("../data/NEWtriangstoredsolutions$(boxsize).txt", "w") do file
             write(file, "$(pointnumber)\n")
             write(file, "$(ourmodel)\n")
             write(file, "$(prevmodel)\n")
@@ -302,7 +302,6 @@ function runTest( ; boxsize=100, numberOfSamplingRuns=250)
     coefficients = [K[1]^3*K[3]^2*κ[6]^3*κ[12]^2, K[1]^2*K[2]*K[3]^2*κ[3]*κ[6]^2*κ[12]^2, K[1]^2*K[2]*K[3]*K[4]*κ[3]*κ[6]^2*κ[9]*κ[12], K[1]*K[2]^2*K[4]*κ[3]^2*κ[6]*κ[9]^2,
                     K[2]^2*K[4]*κ[3]^2*κ[9]*aη, K[2]^2*K[3]*κ[3]^2*κ[12]*aη, K[1]*K[2]*K[3]*κ[3]*κ[6]*κ[12]*aη, K[1]^2*K[3]^2*κ[6]^3*κ[12]^2, 
                     2*K[1]*K[2]*K[3]*K[4]*κ[3]^2*κ[6]*κ[9]*κ[12], 2*K[1]^2*K[2]*K[3]*κ[3]*κ[6]^2*κ[12]^2]
-    display(coefficients)
     mcoef = K[1]*K[2]*K[3]*κ[3]*κ[6]*κ[12]*bη
 
     triangconfigurations = [[[2,7,9],[3,6,10],[1,5],[4,8]], [[3,6,10],[2,4,7],[1,5],[8,9]], [[1,3,6],[2,5,7],[9,10],[4,8]],
