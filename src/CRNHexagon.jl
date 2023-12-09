@@ -7,7 +7,7 @@ import ProgressBars: ProgressBar
 import Colors: distinguishable_colors, red, green, blue
 import LaTeXStrings: @L_str
 
-export runTest
+export runTest, computeCoverInvariants
 
 #=
 Here, the correct θ's are calculated for all possible circuits. 
@@ -109,18 +109,18 @@ Here, all 16 configurations are plotted and saved. The colors are optimized with
 TODO Dissociate the individual plots from the rest to generalize this method
 =#
 function plotconfiguration(points, triangconfigurations, lineconfigurations, triangleplots1, triangleplots2, lineplot, lineplot2)
-    fourcolors = map(col -> (red(col), green(col), blue(col)), distinguishable_colors(4, [RGB(1,1,1), RGB(0,0,0)], dropseed=true, lchoices = range(20, stop=75, length=14), hchoices = range(150, stop=350, length=30)))
-    fivecolors = map(col -> (red(col), green(col), blue(col)), distinguishable_colors(5, [RGB(1,1,1), RGB(0,0,0)], dropseed=true, lchoices = range(35, stop=70, length=14), hchoices = range(120, stop=350, length=30)))
+    fourcolors = map(col -> (red(col), green(col), blue(col)), distinguishable_colors(3, [RGB(1,1,1), RGB(0,0,0)], dropseed=true, lchoices = range(25, stop=70, length=14), hchoices = range(125, stop=325, length=30)))
+    fivecolors = map(col -> (red(col), green(col), blue(col)), distinguishable_colors(5, [RGB(1,1,1), RGB(0,0,0)], dropseed=true, lchoices = range(25, stop=70, length=14), hchoices = range(125, stop=325, length=30)))
 
     pointsForPlot = [(0,0),(1,0),(2,0),(4,1),(4,2),(3,2),(2,2),(0,1),(0,0)]
     fig = Figure(size=(1200,1200))
     ax = Axis(fig[1,1], aspect=1)
     hidespines!(ax)
     hidedecorations!(ax)
-    poly!(ax,[Point2f0(pt) for pt in pointsForPlot]; color=RGBA{Float64}(0.1, 0.1, 0.1, 0.035), strokewidth=0)
+    poly!(ax,[Point2f0(pt) for pt in pointsForPlot]; color=RGBA{Float64}(0.1, 0.1, 0.1, 0.04), strokewidth=0)
     lines!(ax,[Point2f0(pt) for pt in pointsForPlot], color=:black, linewidth=10)
     scatter!(ax,[Point2f0([2,1])]; color=:red2,markersize=60)
-    text!(ax,[Point2f0([2+0.1,1-0.1])], text=L"$\mu$"; color=:red2,fontsize=70)
+    text!(ax,[Point2f0([2+0.1,1-0.1])], text=L"$m$"; color=:red2,fontsize=70)
     scatter!(ax,[Point2f0(pt) for pt in points]; color=:black, markersize=60)
     text!(ax,[Point2f0([1+0.1,1-0.1]), Point2f0([3+0.1,1-0.1]), Point2f0([1+0.1,0+0.04]), Point2f0([3-0.05,2-0.19]), Point2f0([0+0.1,0+0.04]), Point2f0([2+0.17,0-0.05]), Point2f0([4-0.1,1-0.17]), Point2f0([4-0.34,2-0.16]), Point2f0([2-0.05,2-0.16]), Point2f0([0+0.1,1-0.1])], text=[L"$\iota_1$", L"$\iota_2$", L"$\beta_1$", L"$\beta_2$", L"$\alpha_1$", L"$\alpha_2$", L"$\alpha_3$", L"$\alpha_4$", L"$\alpha_5$", L"$\alpha_6$"]; color=:black,fontsize=70)
 
@@ -132,10 +132,10 @@ function plotconfiguration(points, triangconfigurations, lineconfigurations, tri
         ax = Axis(fig[1,1], aspect=1)
         hidespines!(ax)
         hidedecorations!(ax)
-        poly!(ax,[Point2f0(pt) for pt in pointsForPlot]; color=RGBA{Float64}(0.1, 0.1, 0.1, 0.035),strokewidth=0)
+        poly!(ax,[Point2f0(pt) for pt in pointsForPlot]; color=RGBA{Float64}(0.1, 0.1, 0.1, 0.04),strokewidth=0)
         poly!(ax,[Point2f0(points[pt]) for pt in config[1]]; color=RGBA{Float64}(fourcolors[1][1], fourcolors[1][2], fourcolors[1][3], 0.15),strokewidth=0)
         lines!(ax,[Point2f0(points[pt]) for pt in vcat(config[1],config[1][1])], color=RGBA{Float64}(fourcolors[1][1], fourcolors[1][2], fourcolors[1][3], 1), linewidth=5)
-        poly!(ax,[Point2f0(points[pt]) for pt in config[2]]; color=RGBA{Float64}(fourcolors[3][1], fourcolors[2][2], fourcolors[2][3], 0.15),strokewidth=0)
+        poly!(ax,[Point2f0(points[pt]) for pt in config[2]]; color=RGBA{Float64}(fourcolors[2][1], fourcolors[2][2], fourcolors[2][3], 0.15),strokewidth=0)
         lines!(ax,[Point2f0(points[pt]) for pt in vcat(config[2],config[2][1])], color=RGBA{Float64}(fourcolors[2][1], fourcolors[2][2], fourcolors[2][3], 1), linewidth=5)
         lines!(ax,[Point2f0(pt) for pt in pointsForPlot], color=:black, linewidth=10)
 
@@ -200,7 +200,7 @@ function plotconfiguration(points, triangconfigurations, lineconfigurations, tri
         greencolor = RGBA{Float64}(fivecolors[3][1], fivecolors[3][2], fivecolors[3][3], 1)
         bluecolor = RGBA{Float64}(fivecolors[4][1], fivecolors[4][2], fivecolors[4][3], 1)
         yellowcolor = RGBA{Float64}(fivecolors[5][1], fivecolors[5][2], fivecolors[5][3], 1)
-        poly!(ax,[Point2f0(pt) for pt in pointsForPlot]; color=RGBA{Float64}(0.1, 0.1, 0.1, 0.035),strokewidth=0)
+        poly!(ax,[Point2f0(pt) for pt in pointsForPlot]; color=RGBA{Float64}(0.1, 0.1, 0.1, 0.04),strokewidth=0)
 
         if config[3]==[9,10]||config[3]==[10,9]
             lines!(ax,[Point2f0(points[pt]) for pt in [9,10]], color=secondcolor, linewidth=lw)
@@ -249,6 +249,8 @@ function runSamplingComparison(θ, κ, K, aη, bη, mcoef, θbaseline; boxsize=1
         global ourmodel = [parse(Int,entry) for entry in split(readline(f)[2:end-1], ", ")]
         global prevmodel = [parse(Int,entry) for entry in split(readline(f)[2:end-1], ", ")]
         global nomodel = [parse(Int,entry) for entry in split(readline(f)[2:end-1], ", ")]
+
+        close(f)
     catch
         global pointnumber = 0
         global ourmodel = [0 for _ in 1:length(θ)]
@@ -324,8 +326,27 @@ function runTest( ; boxsize=1, numberOfSamplingRuns=250)
     isempty(intersect(triangleplots1,triangleplots2)) && isempty(intersect(triangleplots1,lineplot)) && isempty(intersect(triangleplots1,lineplot2)) && isempty(intersect(triangleplots2,lineplot)) && isempty(intersect(triangleplots2,lineplot2)) && isempty(intersect(lineplot,lineplot2)) || throw(error("Each vertex should only be used once"))
 
     θ = createθcircuits(points, K, κ, coefficients, lineconfigurations, triangconfigurations)
-    #plotconfiguration(points, triangconfigurations, lineconfigurations, triangleplots1, triangleplots2, lineplot, lineplot2)
+    plotconfiguration(points, triangconfigurations, lineconfigurations, triangleplots1, triangleplots2, lineplot, lineplot2)
     runSamplingComparison(θ, κ, K, aη, bη, mcoef, θ[9]; boxsize=boxsize, numberOfSamplingRuns=numberOfSamplingRuns)
+end
+
+function computeCoverInvariants( ; startboxsize=1, finalboxsize=1000)
+    for boxsize in startboxsize:finalboxsize
+        try
+            f = open("../data/NEWtriangstoredsolutions$(boxsize).txt", "r")
+    
+            global pointnumber = parse(Int,readline(f))
+            global ourmodel = [parse(Int,entry) for entry in split(readline(f)[2:end-1], ", ")]
+            global prevmodel = [parse(Int,entry) for entry in split(readline(f)[2:end-1], ", ")]
+            global nomodel = [parse(Int,entry) for entry in split(readline(f)[2:end-1], ", ")]
+
+            close(f)
+        catch
+            continue
+        end
+
+        
+    end
 end
 
 end 
