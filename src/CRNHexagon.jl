@@ -108,9 +108,9 @@ end
 Here, all 16 configurations are plotted and saved. The colors are optimized with respect to distinguishability.
 TODO Dissociate the individual plots from the rest to generalize this method
 =#
-function plotconfiguration(points, triangconfigurations, lineconfigurations, triangleplots1, triangleplots2, lineplot, lineplot2)
-    fourcolors = map(col -> (red(col), green(col), blue(col)), distinguishable_colors(3, [RGB(1,1,1), RGB(0,0,0)], dropseed=true, lchoices = range(25, stop=70, length=14), hchoices = range(125, stop=325, length=30)))
-    fivecolors = map(col -> (red(col), green(col), blue(col)), distinguishable_colors(5, [RGB(1,1,1), RGB(0,0,0)], dropseed=true, lchoices = range(25, stop=70, length=14), hchoices = range(125, stop=325, length=30)))
+function plotAllCovers(points, triangconfigurations, lineconfigurations)
+    fourcolors = map(col -> (red(col), green(col), blue(col)), distinguishable_colors(3, [RGB(1,1,1), RGB(0,0,0)], dropseed=true, lchoices = range(25, stop=70, length=14), hchoices = range(120, stop=330, length=30)))
+    fivecolors = map(col -> (red(col), green(col), blue(col)), distinguishable_colors(5, [RGB(1,1,1), RGB(0,0,0)], dropseed=true, lchoices = range(25, stop=70, length=14), hchoices = range(120, stop=330, length=30)))
 
     pointsForPlot = [(0,0),(1,0),(2,0),(4,1),(4,2),(3,2),(2,2),(0,1),(0,0)]
     fig = Figure(size=(1200,1200))
@@ -298,7 +298,7 @@ function runTest( ; boxsize=1, numberOfSamplingRuns=250)
     @var K[1:4] κ[1:12]
 
     #We choose colors with maximum distinguishability
-    points = [(0,0),(1,0),(2,0),(4,1),(4,2),(3,2),(2,2),(0,1),(3,1),(1,1)]
+    hexPoints = [(0,0),(1,0),(2,0),(4,1),(4,2),(3,2),(2,2),(0,1),(3,1),(1,1)]
     aη = κ[3]*κ[12] - κ[6]*κ[9]
     bη = (K[2] + K[3])*κ[3]*κ[12] - (K[1]+K[4])*κ[6]*κ[9]
     coefficients = [K[1]^3*K[3]^2*κ[6]^3*κ[12]^2, K[1]^2*K[2]*K[3]^2*κ[3]*κ[6]^2*κ[12]^2, K[1]^2*K[2]*K[3]*K[4]*κ[3]*κ[6]^2*κ[9]*κ[12], K[1]*K[2]^2*K[4]*κ[3]^2*κ[6]*κ[9]^2,
@@ -311,22 +311,16 @@ function runTest( ; boxsize=1, numberOfSamplingRuns=250)
     [[1,4,6],[2,5,8],[3,7],[9,10]], [[1,7,9],[3,5,10],[2,6],[4,8]], [[3,5,8],[1,4,7],[9,10],[2,6]],
     [[1,7,9],[3,5,8],[2,6],[4,10]], [[1,6,9],[2,5,8],[3,7],[4,10]], [[1,4,7],[3,5,10],[8,9],[2,6]],
     [[2,5,10],[1,4,6],[3,7],[8,9]], [[1,6,9],[2,5,10],[3,7],[4,8]]]
+    #Check if all covers are legit
     for config in triangconfigurations
         all(t->t in union(config[1],config[2],config[3],config[4]),1:10) || display(config)&&throw(error("The triangles don't cover the entire region"))
         isempty(intersect(config[1],config[2])) && isempty(intersect(config[1],config[3])) && isempty(intersect(config[1],config[4])) && isempty(intersect(config[2],config[3])) && isempty(intersect(config[2],config[4])) && isempty(intersect(config[3],config[4])) || display(config)&&throw(error("Each vertex should only be used once"))
     end
 
     lineconfigurations = [[[5,1],[7,3],[8,9],[6,2],[4,10]], [[5,1],[7,3],[9,10],[6,2],[8,4]]]
-    #triangle = [[1,3,6],[1,4,6],[1,4,7],[1,6,9],[1,7,9],[2,4,7],[2,5,7],[2,5,8],[2,5,10],[2,7,9],[3,5,8],[3,5,10],[3,6,8],[3,6,10]]
-    triangleplots1 = [2,4,7]
-    triangleplots2 = [3,6,10]
-    lineplot = [8,9]
-    lineplot2 = [1,5]
-    all(t->t in union(triangleplots1,triangleplots2,lineplot,lineplot2),1:10) || throw(error("The triangles don't cover the entire region"))
-    isempty(intersect(triangleplots1,triangleplots2)) && isempty(intersect(triangleplots1,lineplot)) && isempty(intersect(triangleplots1,lineplot2)) && isempty(intersect(triangleplots2,lineplot)) && isempty(intersect(triangleplots2,lineplot2)) && isempty(intersect(lineplot,lineplot2)) || throw(error("Each vertex should only be used once"))
 
-    θ = createθcircuits(points, K, κ, coefficients, lineconfigurations, triangconfigurations)
-    plotconfiguration(points, triangconfigurations, lineconfigurations, triangleplots1, triangleplots2, lineplot, lineplot2)
+    θ = createθcircuits(hexPoints, K, κ, coefficients, lineconfigurations, triangconfigurations)
+    plotAllCovers(hexPoints, triangconfigurations, lineconfigurations)
     runSamplingComparison(θ, κ, K, aη, bη, mcoef, θ[9]; boxsize=boxsize, numberOfSamplingRuns=numberOfSamplingRuns)
 end
 
@@ -345,7 +339,8 @@ function computeCoverInvariants( ; startboxsize=1, finalboxsize=1000)
             continue
         end
 
-        
+        permille_ourmodel, permille_prevmodel, permille_nomodel = round(1000*ourmodel/pointnumber,digits=3), round(1000*prevmodel/pointnumber,digits=3), round(1000*nomodel/pointnumber, digits=3)
+
     end
 end
 
