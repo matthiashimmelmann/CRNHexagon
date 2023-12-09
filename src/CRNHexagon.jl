@@ -339,8 +339,10 @@ function computeCoverInvariants( ; startboxsize=1, finalboxsize=1000)
             continue
         end
 
-        permille_ourmodel, permille_prevmodel, permille_nomodel = round(1000*ourmodel/pointnumber,digits=3), round(1000*prevmodel/pointnumber,digits=3), round(1000*nomodel/pointnumber, digits=3)
-
+        permille_ourmodel, permille_prevmodel, permille_nomodel = round.(1000*ourmodel ./ pointnumber, digits=3), round.(1000*prevmodel ./ pointnumber, digits=3), round.(1000*nomodel ./ pointnumber, digits=3)
+        println("$(boxsize):\t ourmodel\t prevmodel\t nomodel")
+        foreach(θ -> println("$(θ): \t$(permille_ourmodel) \t$(permille_prevmodel) \t$(permille_nomodel)"), 1:length(ourmodel))
+        println("\n")
     end
 end
 
