@@ -286,13 +286,13 @@ function runSamplingComparison(θ, κ, K, aη, bη, mcoef, θbaseline; boxsize=1
         end
     end
 
-    foreach(j->println("Case $(j): Our model performed better in $(100*round(ourmodel[j]/(ourmodel[j]+prevmodel[j]),5))% of the cases, where the other model did not work. No model found anything in $(100*round(nomodel[j]/pointnumber, 5)) of the cases."), 1:length(θ))
+    #foreach(j->println("Case $(j): Our model performed better in $(100*round(ourmodel[j]/(ourmodel[j]+prevmodel[j]),5))% of the cases, where the other model did not work. No model found anything in $(100*round(nomodel[j]/pointnumber, 5)) of the cases."), 1:length(θ))
 end
 
 #=
 This is the main method. Use it to run all tests.
 =#
-function runTest( ; boxsize=100, numberOfSamplingRuns=250)
+function runTest( ; boxsize=1, numberOfSamplingRuns=250)
     @var K[1:4] κ[1:12]
 
     #We choose colors with maximum distinguishability
