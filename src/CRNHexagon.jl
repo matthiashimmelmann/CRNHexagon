@@ -1,10 +1,10 @@
 module CRNHexagon
 
-import GLMakie: Point2f0, lines!, Figure, Axis, save, hidespines!, hidedecorations!, mesh!, scatter!, text!, RGBA, RGB, poly!
+import GLMakie: plot!, Point2f0, lines!, Figure, Axis, save, hidespines!, hidedecorations!, mesh!, scatter!, text!, RGBA, RGB, poly!
 import HomotopyContinuation: @var, evaluate, Expression
 import LinearAlgebra: inv, det
 import ProgressBars: ProgressBar
-import Colors: distinguishable_colors, red, green, blue
+import Colors: distinguishable_colors, red, green, blue, colormap
 import LaTeXStrings: @L_str
 
 export runTest, computeCoverInvariants
@@ -294,7 +294,7 @@ end
 #=
 This is the main method. Use it to run all tests.
 =#
-function runTest( ; boxsize=100, numberOfSamplingRuns=250)
+function runTest( ; boxsize=1000, numberOfSamplingRuns=250)
     @var K[1:4] κ[1:12]
 
     #We choose colors with maximum distinguishability
@@ -325,6 +325,13 @@ function runTest( ; boxsize=100, numberOfSamplingRuns=250)
 end
 
 function computeCoverInvariants( ; startboxsize=1, finalboxsize=1000)
+    fig = Figure(size=(1300,500))
+    ax_ourmodel = Axis(fig[1,1])
+    ax_prevmodel = Axis(fig[1,2])
+    ax_nomodel = Axis(fig[1,3])
+    #hidedecorations!(ax_ourmodel); hidedecorations!(ax_prevmodel); hidedecorations!(ax_nomodel);
+    ourmodeldots, prevmodeldots, nomodeldots = [Vector{Float64}([]) for _ in 1:16], [Vector{Float64}([]) for _ in 1:16], [Vector{Float64}([]) for _ in 1:16]
+
     for boxsize in startboxsize:finalboxsize
         try
             f = open("../data/NEWtriangstoredsolutions$(boxsize).txt", "r")
@@ -340,10 +347,20 @@ function computeCoverInvariants( ; startboxsize=1, finalboxsize=1000)
         end
 
         permille_ourmodel, permille_prevmodel, permille_nomodel = round.(1000*ourmodel ./ pointnumber, digits=4), round.(1000*prevmodel ./ pointnumber, digits=4), round.(1000*nomodel ./ pointnumber, digits=4)
+        foreach(i->push!(ourmodeldots[i], permille_ourmodel[i]),1:length(permille_ourmodel))
+        foreach(i->push!(prevmodeldots[i], permille_prevmodel[i]),1:length(permille_ourmodel))
+        foreach(i->push!(nomodeldots[i], permille_nomodel[i]),1:length(permille_ourmodel))
+
         println("$(boxsize):\t ourmodel\t prevmodel\t nomodel")
         foreach(θ -> println("$(θ): \t$(permille_ourmodel[θ]) \t$(permille_prevmodel[θ]) \t$(permille_nomodel[θ])"), 1:length(ourmodel))
         println("\n")
     end
+
+    colors = colormap("Blues", length(ourmodeldots); logscale=false)
+    foreach(line->lines!(ax_ourmodel, 1:length(ourmodeldots[line]), ourmodeldots[line]; linewidth=4, color = colors[line]), 1:length(ourmodeldots))
+    foreach(line->lines!(ax_prevmodel, 1:length(prevmodeldots[line]), prevmodeldots[line]; linewidth=4, color = colors[line]), 1:length(prevmodeldots))
+    foreach(line->lines!(ax_nomodel, 1:length(nomodeldots[line]), nomodeldots[line]; linewidth=4, color = colors[line]), 1:length(nomodeldots))
+    save("../images/16cover_curveplots.png", fig)
 end
 
 end 
