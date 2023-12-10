@@ -294,7 +294,7 @@ end
 #=
 This is the main method. Use it to run all tests.
 =#
-function runTest( ; boxsize=1, numberOfSamplingRuns=250)
+function runTest( ; boxsize=100, numberOfSamplingRuns=250)
     @var K[1:4] κ[1:12]
 
     #We choose colors with maximum distinguishability
@@ -339,9 +339,9 @@ function computeCoverInvariants( ; startboxsize=1, finalboxsize=1000)
             continue
         end
 
-        permille_ourmodel, permille_prevmodel, permille_nomodel = round.(1000*ourmodel ./ pointnumber, digits=3), round.(1000*prevmodel ./ pointnumber, digits=3), round.(1000*nomodel ./ pointnumber, digits=3)
+        permille_ourmodel, permille_prevmodel, permille_nomodel = round.(1000*ourmodel ./ pointnumber, digits=4), round.(1000*prevmodel ./ pointnumber, digits=4), round.(1000*nomodel ./ pointnumber, digits=4)
         println("$(boxsize):\t ourmodel\t prevmodel\t nomodel")
-        foreach(θ -> println("$(θ): \t$(permille_ourmodel) \t$(permille_prevmodel) \t$(permille_nomodel)"), 1:length(ourmodel))
+        foreach(θ -> println("$(θ): \t$(permille_ourmodel[θ]) \t$(permille_prevmodel[θ]) \t$(permille_nomodel[θ])"), 1:length(ourmodel))
         println("\n")
     end
 end
