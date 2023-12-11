@@ -7,7 +7,7 @@ import ProgressBars: ProgressBar
 import Colors: distinguishable_colors, red, green, blue, colormap
 import LaTeXStrings: @L_str
 
-export runTest, computeCoverInvariants
+export runTest, computeCoverInvariants, compareTwoCovers
 
 #=
 Here, the correct θ's are calculated for all possible circuits. 
@@ -294,7 +294,7 @@ end
 #=
 This is the main method. Use it to run all tests.
 =#
-function runTest( ; boxsize=1000, numberOfSamplingRuns=250)
+function runTest( ; boxsize=50, numberOfSamplingRuns=380)
     @var K[1:4] κ[1:12]
 
     #We choose colors with maximum distinguishability
@@ -331,6 +331,7 @@ function computeCoverInvariants( ; startboxsize=1, finalboxsize=1000)
     ax_nomodel = Axis(fig[1,3])
     #hidedecorations!(ax_ourmodel); hidedecorations!(ax_prevmodel); hidedecorations!(ax_nomodel);
     ourmodeldots, prevmodeldots, nomodeldots = [Vector{Float64}([]) for _ in 1:16], [Vector{Float64}([]) for _ in 1:16], [Vector{Float64}([]) for _ in 1:16]
+    xaxis = Vector{Float64}([])
 
     for boxsize in startboxsize:finalboxsize
         try
@@ -350,6 +351,7 @@ function computeCoverInvariants( ; startboxsize=1, finalboxsize=1000)
         foreach(i->push!(ourmodeldots[i], permille_ourmodel[i]),1:length(permille_ourmodel))
         foreach(i->push!(prevmodeldots[i], permille_prevmodel[i]),1:length(permille_ourmodel))
         foreach(i->push!(nomodeldots[i], permille_nomodel[i]),1:length(permille_ourmodel))
+        push!(xaxis, ln(boxsize)+1)
 
         println("$(boxsize):\t ourmodel\t prevmodel\t nomodel")
         foreach(θ -> println("$(θ): \t$(permille_ourmodel[θ]) \t$(permille_prevmodel[θ]) \t$(permille_nomodel[θ])"), 1:length(ourmodel))
@@ -357,10 +359,45 @@ function computeCoverInvariants( ; startboxsize=1, finalboxsize=1000)
     end
 
     colors = colormap("Blues", length(ourmodeldots); logscale=false)
-    foreach(line->lines!(ax_ourmodel, 1:length(ourmodeldots[line]), ourmodeldots[line]; linewidth=4, color = colors[line]), 1:length(ourmodeldots))
-    foreach(line->lines!(ax_prevmodel, 1:length(prevmodeldots[line]), prevmodeldots[line]; linewidth=4, color = colors[line]), 1:length(prevmodeldots))
-    foreach(line->lines!(ax_nomodel, 1:length(nomodeldots[line]), nomodeldots[line]; linewidth=4, color = colors[line]), 1:length(nomodeldots))
+    foreach(line->lines!(ax_ourmodel, xaxis, ourmodeldots[line]; linewidth=4, color = colors[line]), 1:length(ourmodeldots))
+    foreach(line->lines!(ax_prevmodel, xaxis, prevmodeldots[line]; linewidth=4, color = colors[line]), 1:length(prevmodeldots))
+    foreach(line->lines!(ax_nomodel, xaxis, nomodeldots[line]; linewidth=4, color = colors[line]), 1:length(nomodeldots))
     save("../images/16cover_curveplots.png", fig)
+end
+function compareTwoCovers(θsuggestion, θbaseline, K, κ, aη, bη, mcoef; numberOfSamplingRuns=50, boxsizes=[5 for 1:8])
+    vector_baseline_wins = []
+    vector_our_wins = []
+    vector_both_wins = []
+    vector_no_wins = []
+    for sampleindex in 1:numberOfSamplingRuns
+        display("Run: $(sampleindex)")
+        global sampling = filter(sampler -> !any(t->isapprox(t,0), sampler) && evaluate(aη,vcat(K,[κ[3],κ[6],κ[9],κ[12]])=>sampler)>=0 && evaluate(bη,vcat(K,[κ[3],κ[6],κ[9],κ[12]])=>sampler)<0, [boxsizes .* abs.(randn(Float64,8)) for _ in 1:1000000])
+        for sampler in ProgressBar(sampling)
+            mval = evaluate(mcoef,vcat(K,[κ[3],κ[6],κ[9],κ[12]])=>sampler)
+            prevval = evaluate(θbaseline, vcat(K,[κ[3],κ[6],κ[9],κ[12]])=>sampler)
+            ourval = evaluate(θsuggestion, vcat(K,[κ[3],κ[6],κ[9],κ[12]])=>sampler)
+
+            if ourval >= -mval && prevval < -mval
+                push!(vector_our_wins, sampler)
+            elseif ourval < -mval && prevval >= -mval
+                push!(vector_baseline_wins, sampler)
+            elseif ourval >= -mval && prevval >= -mval
+                push!(vector_both_wins, sampler)
+            else
+                push!(vector_no_wins, sampler)
+            end
+        end
+    end
+
+    fig = Figure(size=(1200,1200))
+    ax = [Axis(fig[1,1]; xlabel = L"K_1", ylabel=L"K_2"), Axis(fig[1,2]; xlabel = L"K_3", ylabel=L"K_4"), Axis(fig[2,1]; xlabel = L"$\kappa_3$", ylabel=L"$\kappa_6$"), Axis(fig[2,2]; xlabel = L"$\kappa_9$", ylabel=L"$\kappa_{12}$")]
+    for pic in 1:4
+        scatter!(ax[pic], [Point2f0(pt[(2*(pic-1)+1):(2*(pic-1)+2)]) for pt in vector_both_wins]; color=:lightgrey, markersize=2, markerstrokewidth=0)
+        scatter!(ax[pic], [Point2f0(pt[(2*(pic-1)+1):(2*(pic-1)+2)]) for pt in vector_no_wins]; color=:red3, markersize=2, markerstrokewidth=0)
+        scatter!(ax[pic], [Point2f0(pt[(2*(pic-1)+1):(2*(pic-1)+2)]) for pt in vector_baseline_wins]; color=:blue3, markersize=2, markerstrokewidth=0)
+        scatter!(ax[pic], [Point2f0(pt[(2*(pic-1)+1):(2*(pic-1)+2)]) for pt in vector_our_wins]; color=:green3, markersize=2, markerstrokewidth=0)
+    end
+    save("../images/bestcoverplots.png", fig)
 end
 
 end 
