@@ -294,7 +294,7 @@ end
 #=
 This is the main method. Use it to run all tests.
 =#
-function runTest( ; boxsize=50, numberOfSamplingRuns=380)
+function runTest( ; boxsize=320, numberOfSamplingRuns=500)
     @var K[1:4] κ[1:12]
 
     #We choose colors with maximum distinguishability
@@ -364,7 +364,8 @@ function computeCoverInvariants( ; startboxsize=1, finalboxsize=1000)
     foreach(line->lines!(ax_nomodel, xaxis, nomodeldots[line]; linewidth=4, color = colors[line]), 1:length(nomodeldots))
     save("../images/16cover_curveplots.png", fig)
 end
-function compareTwoCovers(θsuggestion, θbaseline, K, κ, aη, bη, mcoef; numberOfSamplingRuns=50, boxsizes=[5 for 1:8])
+
+function compareTwoCovers(θsuggestion, θbaseline, K, κ, aη, bη, mcoef; numberOfSamplingRuns=50, boxsizes=[5 for _ in 1:8])
     vector_baseline_wins = []
     vector_our_wins = []
     vector_both_wins = []
@@ -372,7 +373,8 @@ function compareTwoCovers(θsuggestion, θbaseline, K, κ, aη, bη, mcoef; numb
     for sampleindex in 1:numberOfSamplingRuns
         display("Run: $(sampleindex)")
         global sampling = filter(sampler -> !any(t->isapprox(t,0), sampler) && evaluate(aη,vcat(K,[κ[3],κ[6],κ[9],κ[12]])=>sampler)>=0 && evaluate(bη,vcat(K,[κ[3],κ[6],κ[9],κ[12]])=>sampler)<0, [boxsizes .* abs.(randn(Float64,8)) for _ in 1:1000000])
-        for sampler in ProgressBar(sampling)
+        for ind in ProgressBar(1:length(sampling))
+            sampler = sampling[ind]
             mval = evaluate(mcoef,vcat(K,[κ[3],κ[6],κ[9],κ[12]])=>sampler)
             prevval = evaluate(θbaseline, vcat(K,[κ[3],κ[6],κ[9],κ[12]])=>sampler)
             ourval = evaluate(θsuggestion, vcat(K,[κ[3],κ[6],κ[9],κ[12]])=>sampler)
