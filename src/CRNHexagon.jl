@@ -294,7 +294,7 @@ end
 #=
 This is the main method. Use it to run all tests.
 =#
-function runTest( ; boxsize=320, numberOfSamplingRuns=500)
+function runTest( ; boxsize=1000, numberOfSamplingRuns=500)
     @var K[1:4] κ[1:12]
 
     #We choose colors with maximum distinguishability
@@ -326,9 +326,9 @@ end
 
 function computeCoverInvariants( ; startboxsize=1, finalboxsize=1000)
     fig = Figure(size=(1300,500))
-    ax_ourmodel = Axis(fig[1,1])
-    ax_prevmodel = Axis(fig[1,2])
-    ax_nomodel = Axis(fig[1,3])
+    ax_ourmodel = Axis(fig[1,1]; title="Our Model Won", xlabel=L"$\ln(b)+1$", ylabel=L"$\perthousand$")
+    ax_prevmodel = Axis(fig[1,2]; title="Baseline Model Won", xlabel=L"$\ln(b)+1$", ylabel=L"$\perthousand$")
+    ax_nomodel = Axis(fig[1,3]; title="Neither Model Won", xlabel=L"$\ln(b)+1$", ylabel=L"$\perthousand$")
     #hidedecorations!(ax_ourmodel); hidedecorations!(ax_prevmodel); hidedecorations!(ax_nomodel);
     ourmodeldots, prevmodeldots, nomodeldots = [Vector{Float64}([]) for _ in 1:16], [Vector{Float64}([]) for _ in 1:16], [Vector{Float64}([]) for _ in 1:16]
     xaxis = Vector{Float64}([])
@@ -365,14 +365,43 @@ function computeCoverInvariants( ; startboxsize=1, finalboxsize=1000)
     save("../images/16cover_curveplots.png", fig)
 end
 
-function compareTwoCovers(θsuggestion, θbaseline, K, κ, aη, bη, mcoef; numberOfSamplingRuns=50, boxsizes=[5 for _ in 1:8])
+function compareTwoCovers(cover_suggested::Int, cover_baseline::Int; numberOfSamplingRuns=100, boxsizes=[5 for _ in 1:8])
+    @var K[1:4] κ[1:12]
+
+    #We choose colors with maximum distinguishability
+    hexPoints = [(0,0),(1,0),(2,0),(4,1),(4,2),(3,2),(2,2),(0,1),(3,1),(1,1)]
+    aη = κ[3]*κ[12] - κ[6]*κ[9]
+    bη = (K[2] + K[3])*κ[3]*κ[12] - (K[1]+K[4])*κ[6]*κ[9]
+    coefficients = [K[1]^3*K[3]^2*κ[6]^3*κ[12]^2, K[1]^2*K[2]*K[3]^2*κ[3]*κ[6]^2*κ[12]^2, K[1]^2*K[2]*K[3]*K[4]*κ[3]*κ[6]^2*κ[9]*κ[12], K[1]*K[2]^2*K[4]*κ[3]^2*κ[6]*κ[9]^2,
+                    K[2]^2*K[4]*κ[3]^2*κ[9]*aη, K[2]^2*K[3]*κ[3]^2*κ[12]*aη, K[1]*K[2]*K[3]*κ[3]*κ[6]*κ[12]*aη, K[1]^2*K[3]^2*κ[6]^3*κ[12]^2, 
+                    2*K[1]*K[2]*K[3]*K[4]*κ[3]^2*κ[6]*κ[9]*κ[12], 2*K[1]^2*K[2]*K[3]*κ[3]*κ[6]^2*κ[12]^2]
+    mcoef = K[1]*K[2]*K[3]*κ[3]*κ[6]*κ[12]*bη
+
+    triangconfigurations = [[[2,7,9],[3,6,10],[1,5],[4,8]], [[3,6,10],[2,4,7],[1,5],[8,9]], [[1,3,6],[2,5,7],[9,10],[4,8]],
+    [[1,3,6],[2,5,7],[8,9],[4,10]], [[3,6,8],[2,7,9],[4,10],[1,5]], [[2,4,7],[3,6,8],[1,5],[9,10]],
+    [[1,4,6],[2,5,8],[3,7],[9,10]], [[1,7,9],[3,5,10],[2,6],[4,8]], [[3,5,8],[1,4,7],[9,10],[2,6]],
+    [[1,7,9],[3,5,8],[2,6],[4,10]], [[1,6,9],[2,5,8],[3,7],[4,10]], [[1,4,7],[3,5,10],[8,9],[2,6]],
+    [[2,5,10],[1,4,6],[3,7],[8,9]], [[1,6,9],[2,5,10],[3,7],[4,8]]]
+    #Check if all covers are legit
+    for config in triangconfigurations
+        all(t->t in union(config[1],config[2],config[3],config[4]),1:10) || display(config)&&throw(error("The triangles don't cover the entire region"))
+        isempty(intersect(config[1],config[2])) && isempty(intersect(config[1],config[3])) && isempty(intersect(config[1],config[4])) && isempty(intersect(config[2],config[3])) && isempty(intersect(config[2],config[4])) && isempty(intersect(config[3],config[4])) || display(config)&&throw(error("Each vertex should only be used once"))
+    end
+
+    lineconfigurations = [[[5,1],[7,3],[8,9],[6,2],[4,10]], [[5,1],[7,3],[9,10],[6,2],[8,4]]]
+
+    θ = createθcircuits(hexPoints, K, κ, coefficients, lineconfigurations, triangconfigurations)
+    empiricalComparisonOfTwoCovers(θ[cover_suggested], θ[cover_baseline], K, κ, aη, bη, mcoef; numberOfSamplingRuns=50, boxsizes=[5 for _ in 1:8], cover_1=cover_suggested, cover_2 = cover_baseline)
+end
+
+function empiricalComparisonOfTwoCovers(θsuggestion, θbaseline, K, κ, aη, bη, mcoef; numberOfSamplingRuns=100, boxsizes=[5 for _ in 1:8], cover_1=15, cover_2 = 9)
     vector_baseline_wins = []
     vector_our_wins = []
     vector_both_wins = []
     vector_no_wins = []
     for sampleindex in 1:numberOfSamplingRuns
         display("Run: $(sampleindex)")
-        global sampling = filter(sampler -> !any(t->isapprox(t,0), sampler) && evaluate(aη,vcat(K,[κ[3],κ[6],κ[9],κ[12]])=>sampler)>=0 && evaluate(bη,vcat(K,[κ[3],κ[6],κ[9],κ[12]])=>sampler)<0, [boxsizes .* abs.(randn(Float64,8)) for _ in 1:1000000])
+        global sampling = filter(sampler -> !any(t->isapprox(t,0), sampler) && evaluate(aη,vcat(K,[κ[3],κ[6],κ[9],κ[12]])=>sampler)>=0 && evaluate(bη,vcat(K,[κ[3],κ[6],κ[9],κ[12]])=>sampler)<0, [boxsizes .* abs.(rand(Float64,8)) for _ in 1:1000000])
         for ind in ProgressBar(1:length(sampling))
             sampler = sampling[ind]
             mval = evaluate(mcoef,vcat(K,[κ[3],κ[6],κ[9],κ[12]])=>sampler)
@@ -394,12 +423,12 @@ function compareTwoCovers(θsuggestion, θbaseline, K, κ, aη, bη, mcoef; numb
     fig = Figure(size=(1200,1200))
     ax = [Axis(fig[1,1]; xlabel = L"K_1", ylabel=L"K_2"), Axis(fig[1,2]; xlabel = L"K_3", ylabel=L"K_4"), Axis(fig[2,1]; xlabel = L"$\kappa_3$", ylabel=L"$\kappa_6$"), Axis(fig[2,2]; xlabel = L"$\kappa_9$", ylabel=L"$\kappa_{12}$")]
     for pic in 1:4
-        scatter!(ax[pic], [Point2f0(pt[(2*(pic-1)+1):(2*(pic-1)+2)]) for pt in vector_both_wins]; color=:lightgrey, markersize=2, markerstrokewidth=0)
-        scatter!(ax[pic], [Point2f0(pt[(2*(pic-1)+1):(2*(pic-1)+2)]) for pt in vector_no_wins]; color=:red3, markersize=2, markerstrokewidth=0)
-        scatter!(ax[pic], [Point2f0(pt[(2*(pic-1)+1):(2*(pic-1)+2)]) for pt in vector_baseline_wins]; color=:blue3, markersize=2, markerstrokewidth=0)
-        scatter!(ax[pic], [Point2f0(pt[(2*(pic-1)+1):(2*(pic-1)+2)]) for pt in vector_our_wins]; color=:green3, markersize=2, markerstrokewidth=0)
+        scatter!(ax[pic], [Point2f0(pt[(2*(pic-1)+1):(2*(pic-1)+2)]) for pt in vector_both_wins]; color=:lightgrey, markersize=1, markerstrokewidth=0)
+        scatter!(ax[pic], [Point2f0(pt[(2*(pic-1)+1):(2*(pic-1)+2)]) for pt in vector_no_wins]; color=:darkgrey, markersize=1, markerstrokewidth=0)
+        scatter!(ax[pic], [Point2f0(pt[(2*(pic-1)+1):(2*(pic-1)+2)]) for pt in vector_baseline_wins]; color=:red3, markersize=1, markerstrokewidth=0)
+        scatter!(ax[pic], [Point2f0(pt[(2*(pic-1)+1):(2*(pic-1)+2)]) for pt in vector_our_wins]; color=:green3, markersize=1, markerstrokewidth=0)
     end
-    save("../images/bestcoverplots.png", fig)
+    save("../images/bestcoverplots$(cover_1)-$(cover_2).png", fig)
 end
 
 end 
