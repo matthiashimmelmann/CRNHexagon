@@ -7,13 +7,13 @@ import ProgressBars: ProgressBar
 import Colors: distinguishable_colors, red, green, blue, colormap
 import LaTeXStrings: @L_str
 
-export runTest, computeCoverInvariants, compareTwoCovers
+export runTest, computeCoverInvariants, compareTwoCovers, runTest_noDependencies
 
 #=
 Here, the correct θ's are calculated for all possible circuits. 
 TODO: Dissect the method to allow for weightings.
 =#
-function createθcircuits(points, K, κ, coefficients, lineconfigurations, triangconfigurations)
+function createθcircuits(points, coefficients, lineconfigurations, triangconfigurations)
     m = (2,1)
     λ = []
     θ = []
@@ -240,10 +240,10 @@ nonnegativity, while the baseline model does not, we add 1 to `ourmodel` and if 
 true, we add 1 to `prevmodel`. If neither model recognizes nonnegativity, we add 1 to `nomodel`.
 `pointnumber` is a counter of the samples drawn.
 =#
-function runSamplingComparison(θ, κ, K, aη, bη, mcoef, θbaseline; boxsize=100, numberOfSamplingRuns=250)
+function runSamplingComparison(θ, κs, Ks, aη, bη, mcoef, θbaseline; boxsize=100, numberOfSamplingRuns=250, prefix="NEW")
     #If the file exists, we add to the previously run tests. Else, we set everything to 0.
     try
-        f = open("../data/NEWtriangstoredsolutions$(boxsize).txt", "r")
+        f = open("../data/$(prefix)triangstoredsolutions$(boxsize).txt", "r")
 
         global pointnumber = parse(Int,readline(f))
         global ourmodel = [parse(Int,entry) for entry in split(readline(f)[2:end-1], ", ")]
@@ -260,14 +260,14 @@ function runSamplingComparison(θ, κ, K, aη, bη, mcoef, θbaseline; boxsize=1
 
     for sampleindex in 1:numberOfSamplingRuns
         display("Run: $(sampleindex)")
-        global sampling = filter(sampler -> !any(t->isapprox(t,0), sampler) && evaluate(aη,vcat(K,[κ[3],κ[6],κ[9],κ[12]])=>sampler)>=0 && evaluate(bη,vcat(K,[κ[3],κ[6],κ[9],κ[12]])=>sampler)<0, [boxsize*abs.(randn(Float64,8)) for _ in 1:1000000])
+        global sampling = filter(sampler -> !any(t->isapprox(t,0), sampler) && evaluate(aη,vcat(Ks,κs)=>sampler)>=0 && evaluate(bη,vcat(Ks,κs)=>sampler)<0, [boxsize * abs.(rand(Float64,length(vcat(Ks,κs)))) for _ in 1:1000000])
         global pointnumber = pointnumber+length(sampling)
         for ind in ProgressBar(1:length(sampling))
             sampler = sampling[ind]
-            mval = evaluate(mcoef,vcat(K,[κ[3],κ[6],κ[9],κ[12]])=>sampler)
-            prevval = evaluate(θbaseline, vcat(K,[κ[3],κ[6],κ[9],κ[12]])=>sampler)
+            mval = evaluate(mcoef,vcat(Ks,κs)=>sampler)
+            prevval = evaluate(θbaseline, vcat(Ks,κs)=>sampler)
             for j in 1:length(θ)
-                ourval = evaluate(θ[j], vcat(K,[κ[3],κ[6],κ[9],κ[12]])=>sampler)
+                ourval = evaluate(θ[j], vcat(Ks,κs)=>sampler)
 
                 if ourval >= -mval && prevval < -mval
                     global ourmodel[j] += 1
@@ -280,7 +280,7 @@ function runSamplingComparison(θ, κ, K, aη, bη, mcoef, θbaseline; boxsize=1
         end
 
         #SAVE the data to the file `NEWtriangstoredsolutions.txt`
-        open("../data/NEWtriangstoredsolutions$(boxsize).txt", "w") do file
+        open("../data/$(prefix)triangstoredsolutions$(boxsize).txt", "w") do file
             write(file, "$(pointnumber)\n")
             write(file, "$(ourmodel)\n")
             write(file, "$(prevmodel)\n")
@@ -319,16 +319,35 @@ function runTest( ; boxsize=1000, numberOfSamplingRuns=500)
 
     lineconfigurations = [[[5,1],[7,3],[8,9],[6,2],[4,10]], [[5,1],[7,3],[9,10],[6,2],[8,4]]]
 
-    θ = createθcircuits(hexPoints, K, κ, coefficients, lineconfigurations, triangconfigurations)
+    θ = createθcircuits(hexPoints, coefficients, lineconfigurations, triangconfigurations)
     plotAllCovers(hexPoints, triangconfigurations, lineconfigurations)
-    runSamplingComparison(θ, κ, K, aη, bη, mcoef, θ[9]; boxsize=boxsize, numberOfSamplingRuns=numberOfSamplingRuns)
+    runSamplingComparison(θ, [κ[3],κ[6],κ[9],κ[12]], K, aη, bη, mcoef, θ[9]; boxsize=boxsize, numberOfSamplingRuns=numberOfSamplingRuns)
+end
+
+function runTest_noDependencies( ; boxsize=1000, numberOfSamplingRuns=100)
+    @var κ[1:11]
+    triangconfigurations = [[[2,7,9],[3,6,10],[1,5],[4,8]], [[3,6,10],[2,4,7],[1,5],[8,9]], [[1,3,6],[2,5,7],[9,10],[4,8]],
+    [[1,3,6],[2,5,7],[8,9],[4,10]], [[3,6,8],[2,7,9],[4,10],[1,5]], [[2,4,7],[3,6,8],[1,5],[9,10]],
+    [[1,4,6],[2,5,8],[3,7],[9,10]], [[1,7,9],[3,5,10],[2,6],[4,8]], [[3,5,8],[1,4,7],[9,10],[2,6]],
+    [[1,7,9],[3,5,8],[2,6],[4,10]], [[1,6,9],[2,5,8],[3,7],[4,10]], [[1,4,7],[3,5,10],[8,9],[2,6]],
+    [[2,5,10],[1,4,6],[3,7],[8,9]], [[1,6,9],[2,5,10],[3,7],[4,8]]]
+    #Check if all covers are legit
+    for config in triangconfigurations
+        all(t->t in union(config[1],config[2],config[3],config[4]),1:10) || display(config)&&throw(error("The triangles don't cover the entire region"))
+        isempty(intersect(config[1],config[2])) && isempty(intersect(config[1],config[3])) && isempty(intersect(config[1],config[4])) && isempty(intersect(config[2],config[3])) && isempty(intersect(config[2],config[4])) && isempty(intersect(config[3],config[4])) || display(config)&&throw(error("Each vertex should only be used once"))
+    end
+
+    lineconfigurations = [[[5,1],[7,3],[8,9],[6,2],[4,10]], [[5,1],[7,3],[9,10],[6,2],[8,4]]]
+
+    θ = createθcircuits(hexPoints, κ[1:10], lineconfigurations, triangconfigurations)
+    runSamplingComparison(θ, κ[1:10], Vector{Float64}([]), Expression(1), Expression(-κ[11]), Expression(-κ[11]), θ[9]; boxsize=boxsize, numberOfSamplingRuns=numberOfSamplingRuns, prefix="noDependencies")
 end
 
 function computeCoverInvariants( ; startboxsize=1, finalboxsize=1000)
     fig = Figure(size=(1300,500))
-    ax_ourmodel = Axis(fig[1,1]; title="Our Model Won", xlabel=L"$\ln(b)+1$", ylabel=L"$\perthousand$")
-    ax_prevmodel = Axis(fig[1,2]; title="Baseline Model Won", xlabel=L"$\ln(b)+1$", ylabel=L"$\perthousand$")
-    ax_nomodel = Axis(fig[1,3]; title="Neither Model Won", xlabel=L"$\ln(b)+1$", ylabel=L"$\perthousand$")
+    ax_ourmodel = Axis(fig[1,1]; title="Our Model Won", xlabel=L"$\log(b)+1$", ylabel=L"$\perthousand$")
+    ax_prevmodel = Axis(fig[1,2]; title="Baseline Model Won", xlabel=L"$\log(b)+1$", ylabel=L"$\perthousand$")
+    ax_nomodel = Axis(fig[1,3]; title="Neither Model Won", xlabel=L"$\log(b)+1$", ylabel=L"$\perthousand$")
     #hidedecorations!(ax_ourmodel); hidedecorations!(ax_prevmodel); hidedecorations!(ax_nomodel);
     ourmodeldots, prevmodeldots, nomodeldots = [Vector{Float64}([]) for _ in 1:16], [Vector{Float64}([]) for _ in 1:16], [Vector{Float64}([]) for _ in 1:16]
     xaxis = Vector{Float64}([])
@@ -351,7 +370,7 @@ function computeCoverInvariants( ; startboxsize=1, finalboxsize=1000)
         foreach(i->push!(ourmodeldots[i], permille_ourmodel[i]),1:length(permille_ourmodel))
         foreach(i->push!(prevmodeldots[i], permille_prevmodel[i]),1:length(permille_ourmodel))
         foreach(i->push!(nomodeldots[i], permille_nomodel[i]),1:length(permille_ourmodel))
-        push!(xaxis, ln(boxsize)+1)
+        push!(xaxis, log(boxsize)+1)
 
         println("$(boxsize):\t ourmodel\t prevmodel\t nomodel")
         foreach(θ -> println("$(θ): \t$(permille_ourmodel[θ]) \t$(permille_prevmodel[θ]) \t$(permille_nomodel[θ])"), 1:length(ourmodel))
@@ -424,8 +443,8 @@ function empiricalComparisonOfTwoCovers(θsuggestion, θbaseline, K, κ, aη, b�
     ax = [Axis(fig[1,1]; xlabel = L"K_1", ylabel=L"K_2"), Axis(fig[1,2]; xlabel = L"K_3", ylabel=L"K_4"), Axis(fig[2,1]; xlabel = L"$\kappa_3$", ylabel=L"$\kappa_6$"), Axis(fig[2,2]; xlabel = L"$\kappa_9$", ylabel=L"$\kappa_{12}$")]
     for pic in 1:4
         scatter!(ax[pic], [Point2f0(pt[(2*(pic-1)+1):(2*(pic-1)+2)]) for pt in vector_both_wins]; color=:lightgrey, markersize=1, markerstrokewidth=0)
-        scatter!(ax[pic], [Point2f0(pt[(2*(pic-1)+1):(2*(pic-1)+2)]) for pt in vector_no_wins]; color=:darkgrey, markersize=1, markerstrokewidth=0)
-        scatter!(ax[pic], [Point2f0(pt[(2*(pic-1)+1):(2*(pic-1)+2)]) for pt in vector_baseline_wins]; color=:red3, markersize=1, markerstrokewidth=0)
+        scatter!(ax[pic], [Point2f0(pt[(2*(pic-1)+1):(2*(pic-1)+2)]) for pt in vector_no_wins]; color=:red3, markersize=1, markerstrokewidth=0)
+        scatter!(ax[pic], [Point2f0(pt[(2*(pic-1)+1):(2*(pic-1)+2)]) for pt in vector_baseline_wins]; color=:blue3, markersize=1, markerstrokewidth=0)
         scatter!(ax[pic], [Point2f0(pt[(2*(pic-1)+1):(2*(pic-1)+2)]) for pt in vector_our_wins]; color=:green3, markersize=1, markerstrokewidth=0)
     end
     save("../images/bestcoverplots$(cover_1)-$(cover_2).png", fig)
