@@ -240,10 +240,10 @@ nonnegativity, while the baseline model does not, we add 1 to `ourmodel` and if 
 true, we add 1 to `prevmodel`. If neither model recognizes nonnegativity, we add 1 to `nomodel`.
 `pointnumber` is a counter of the samples drawn.
 =#
-function runSamplingComparison(θ, κs, Ks, aη, bη, mcoef, θbaseline; boxsize=100, numberOfSamplingRuns=250, prefix="NEW")
+function runSamplingComparison(θ, κs, Ks, aη, bη, mcoef, θbaseline; boxsize=100, numberOfSamplingRuns=250, prefix="NEW", suffix="")
     #If the file exists, we add to the previously run tests. Else, we set everything to 0.
     try
-        f = open("../data/$(prefix)triangstoredsolutions$(boxsize).txt", "r")
+        f = open("../data/$(prefix)$(suffix)triangstoredsolutions$(boxsize).txt", "r")
 
         global pointnumber = parse(Int,readline(f))
         global ourmodel = [parse(Int,entry) for entry in split(readline(f)[2:end-1], ", ")]
@@ -268,7 +268,6 @@ function runSamplingComparison(θ, κs, Ks, aη, bη, mcoef, θbaseline; boxsize
             prevval = evaluate(θbaseline, vcat(Ks,κs)=>sampler)
             for j in 1:length(θ)
                 ourval = evaluate(θ[j], vcat(Ks,κs)=>sampler)
-
                 if ourval >= -mval && prevval < -mval
                     global ourmodel[j] += 1
                 elseif ourval < -mval && prevval >= -mval
@@ -280,10 +279,10 @@ function runSamplingComparison(θ, κs, Ks, aη, bη, mcoef, θbaseline; boxsize
         end
 
         #SAVE the data to the file `NEWtriangstoredsolutions.txt`
-        open("../data/$(prefix)triangstoredsolutions$(boxsize).txt", "w") do file
+        open("../data/$(prefix)$(suffix)triangstoredsolutions$(boxsize).txt", "w") do file
             write(file, "$(pointnumber)\n")
             write(file, "$(ourmodel)\n")
-            write(file, "$(prevmodel)\n")
+            (suffix != "noRelativity") && write(file, "$(prevmodel)\n")
             write(file, "$(nomodel)\n")
         end
     end
@@ -294,7 +293,7 @@ end
 #=
 This is the main method. Use it to run all tests.
 =#
-function runTest( ; boxsize=1000, numberOfSamplingRuns=500)
+function runTest( ; boxsize=1, numberOfSamplingRuns=500, prefix="NEW", suffix="")
     @var K[1:4] κ[1:12]
 
     #We choose colors with maximum distinguishability
@@ -321,11 +320,13 @@ function runTest( ; boxsize=1000, numberOfSamplingRuns=500)
 
     θ = createθcircuits(hexPoints, coefficients, lineconfigurations, triangconfigurations)
     plotAllCovers(hexPoints, triangconfigurations, lineconfigurations)
-    runSamplingComparison(θ, [κ[3],κ[6],κ[9],κ[12]], K, aη, bη, mcoef, θ[9]; boxsize=boxsize, numberOfSamplingRuns=numberOfSamplingRuns)
+    runSamplingComparison(θ, [κ[3],κ[6],κ[9],κ[12]], K, aη, bη, mcoef, θ[9]; boxsize=boxsize, numberOfSamplingRuns=numberOfSamplingRuns, prefix=prefix, suffix=suffix)
 end
 
-function runTest_noDependencies( ; boxsize=1000, numberOfSamplingRuns=100)
+function runTest_noDependencies( ; boxsize=1000, numberOfSamplingRuns=10, prefix="", suffix="noDependencies")
     @var κ[1:11]
+
+    hexPoints = [(0,0),(1,0),(2,0),(4,1),(4,2),(3,2),(2,2),(0,1),(3,1),(1,1)]
     triangconfigurations = [[[2,7,9],[3,6,10],[1,5],[4,8]], [[3,6,10],[2,4,7],[1,5],[8,9]], [[1,3,6],[2,5,7],[9,10],[4,8]],
     [[1,3,6],[2,5,7],[8,9],[4,10]], [[3,6,8],[2,7,9],[4,10],[1,5]], [[2,4,7],[3,6,8],[1,5],[9,10]],
     [[1,4,6],[2,5,8],[3,7],[9,10]], [[1,7,9],[3,5,10],[2,6],[4,8]], [[3,5,8],[1,4,7],[9,10],[2,6]],
@@ -339,11 +340,11 @@ function runTest_noDependencies( ; boxsize=1000, numberOfSamplingRuns=100)
 
     lineconfigurations = [[[5,1],[7,3],[8,9],[6,2],[4,10]], [[5,1],[7,3],[9,10],[6,2],[8,4]]]
 
-    θ = createθcircuits(hexPoints, κ[1:10], lineconfigurations, triangconfigurations)
-    runSamplingComparison(θ, κ[1:10], Vector{Float64}([]), Expression(1), Expression(-κ[11]), Expression(-κ[11]), θ[9]; boxsize=boxsize, numberOfSamplingRuns=numberOfSamplingRuns, prefix="noDependencies")
+    θ = createθcircuits(hexPoints, [1,1,1,1,1,1,1,1,2,2] .* (κ[1:10] .^ [10,10,10,9,8,8,8,9,9,9]), lineconfigurations, triangconfigurations)
+    runSamplingComparison(θ, κ[1:11], Vector{Float64}([]), Expression(1), Expression(-1), Expression(-2*κ[11]^9), θ[9]; boxsize=boxsize, numberOfSamplingRuns=numberOfSamplingRuns, prefix=prefix, suffix=suffix)
 end
 
-function computeCoverInvariants( ; startboxsize=1, finalboxsize=1000)
+function computeCoverInvariants( ; startboxsize=1, finalboxsize=1000, prefix="NEW", suffix="")
     fig = Figure(size=(1300,500))
     ax_ourmodel = Axis(fig[1,1]; title="Our Model Won", xlabel=L"$\log(b)+1$", ylabel=L"$\perthousand$")
     ax_prevmodel = Axis(fig[1,2]; title="Baseline Model Won", xlabel=L"$\log(b)+1$", ylabel=L"$\perthousand$")
@@ -354,7 +355,7 @@ function computeCoverInvariants( ; startboxsize=1, finalboxsize=1000)
 
     for boxsize in startboxsize:finalboxsize
         try
-            f = open("../data/NEWtriangstoredsolutions$(boxsize).txt", "r")
+            f = open("../data/$(prefix)$(suffix)triangstoredsolutions$(boxsize).txt", "r")
     
             global pointnumber = parse(Int,readline(f))
             global ourmodel = [parse(Int,entry) for entry in split(readline(f)[2:end-1], ", ")]
@@ -366,22 +367,42 @@ function computeCoverInvariants( ; startboxsize=1, finalboxsize=1000)
             continue
         end
 
-        permille_ourmodel, permille_prevmodel, permille_nomodel = round.(1000*ourmodel ./ pointnumber, digits=4), round.(1000*prevmodel ./ pointnumber, digits=4), round.(1000*nomodel ./ pointnumber, digits=4)
-        foreach(i->push!(ourmodeldots[i], permille_ourmodel[i]),1:length(permille_ourmodel))
-        foreach(i->push!(prevmodeldots[i], permille_prevmodel[i]),1:length(permille_ourmodel))
-        foreach(i->push!(nomodeldots[i], permille_nomodel[i]),1:length(permille_ourmodel))
+        permille_ourmodel, permille_prevmodel, permille_nomodel, percent_ourmodel_pure = round.(10000*ourmodel ./ pointnumber, digits=2), round.(10000*prevmodel ./ pointnumber, digits=2), round.(10000*nomodel ./ pointnumber, digits=2), round.(100 * (pointnumber .- (nomodel .+ prevmodel)) ./ pointnumber, digits=3)
+        foreach(i->push!(ourmodeldots[i], permille_ourmodel[i]), 1:length(permille_ourmodel))
+        foreach(i->push!(prevmodeldots[i], permille_prevmodel[i]), 1:length(permille_ourmodel))
+        foreach(i->push!(nomodeldots[i], permille_nomodel[i]), 1:length(permille_ourmodel))
         push!(xaxis, log(boxsize)+1)
-
-        println("$(boxsize):\t ourmodel\t prevmodel\t nomodel")
-        foreach(θ -> println("$(θ): \t$(permille_ourmodel[θ]) \t$(permille_prevmodel[θ]) \t$(permille_nomodel[θ])"), 1:length(ourmodel))
+        
+        println("$(boxsize):\t ourmodel\t prevmodel\t nomodel\t ourmodel_pure[%]")
+        foreach(θ -> println("$(θ): \t$(permille_ourmodel[θ]) \t$(permille_prevmodel[θ]) \t$(permille_nomodel[θ]) \t$(percent_ourmodel_pure[θ])"), 1:length(ourmodel))
         println("\n")
     end
 
+    #print Latex table code
+    for θ in 1:Int(length(ourmodeldots)/2)
+        print("~&+&")
+        for i in 1:length(ourmodeldots[θ])
+            print("$(ourmodeldots[θ][i])&$(ourmodeldots[θ+8][i])&")
+        end
+        print("+&~\\\\ \n")
+        print("$(θ)&\$-\$&")
+        for i in 1:length(prevmodeldots[θ])
+            print("$(prevmodeldots[θ][i])&$(prevmodeldots[θ+8][i])&")
+        end
+        print("\$-\$&$(θ+8)\\\\ \n")
+        print("~&0&")
+        for i in 1:length(nomodeldots[θ])
+            print("$(nomodeldots[θ][i])&$(nomodeldots[θ+8][i])&")
+        end
+        print("0&~\\\\[.3mm] \\thickhline \n\n")
+    end
+
+
     colors = colormap("Blues", length(ourmodeldots); logscale=false)
-    foreach(line->lines!(ax_ourmodel, xaxis, ourmodeldots[line]; linewidth=4, color = colors[line]), 1:length(ourmodeldots))
-    foreach(line->lines!(ax_prevmodel, xaxis, prevmodeldots[line]; linewidth=4, color = colors[line]), 1:length(prevmodeldots))
-    foreach(line->lines!(ax_nomodel, xaxis, nomodeldots[line]; linewidth=4, color = colors[line]), 1:length(nomodeldots))
-    save("../images/16cover_curveplots.png", fig)
+    foreach(line->lines!(ax_ourmodel, xaxis, ourmodeldots[line] ./ ourmodeldots[line][1]; linewidth=4, color = colors[line]), 1:length(ourmodeldots))
+    foreach(line->lines!(ax_prevmodel, xaxis, prevmodeldots[line] ./ prevmodeldots[line][1]; linewidth=4, color = colors[line]), 1:length(prevmodeldots))
+    foreach(line->lines!(ax_nomodel, xaxis, nomodeldots[line] ./ nomodeldots[line][1]; linewidth=4, color = colors[line]), 1:length(nomodeldots))
+    save("../images/$(prefix)$(suffix)$(length(ourmodeldots))cover_curveplots.png", fig)
 end
 
 function compareTwoCovers(cover_suggested::Int, cover_baseline::Int; numberOfSamplingRuns=100, boxsizes=[5 for _ in 1:8])
@@ -410,7 +431,7 @@ function compareTwoCovers(cover_suggested::Int, cover_baseline::Int; numberOfSam
     lineconfigurations = [[[5,1],[7,3],[8,9],[6,2],[4,10]], [[5,1],[7,3],[9,10],[6,2],[8,4]]]
 
     θ = createθcircuits(hexPoints, K, κ, coefficients, lineconfigurations, triangconfigurations)
-    empiricalComparisonOfTwoCovers(θ[cover_suggested], θ[cover_baseline], K, κ, aη, bη, mcoef; numberOfSamplingRuns=50, boxsizes=[5 for _ in 1:8], cover_1=cover_suggested, cover_2 = cover_baseline)
+    empiricalComparisonOfTwoCovers(θ[cover_suggested], θ[cover_baseline], K, κ, aη, bη, mcoef; numberOfSamplingRuns=250, boxsizes=[5 for _ in 1:8], cover_1=cover_suggested, cover_2 = cover_baseline)
 end
 
 function empiricalComparisonOfTwoCovers(θsuggestion, θbaseline, K, κ, aη, bη, mcoef; numberOfSamplingRuns=100, boxsizes=[5 for _ in 1:8], cover_1=15, cover_2 = 9)
