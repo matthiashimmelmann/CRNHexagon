@@ -10,3 +10,8 @@ HomotopyContinuation = "f213a82b-91d6-5c5d-acf7-10f1c761b327"
 LaTeXStrings = "b964fa9f-0449-5b57-a5c2-d3ea65f4040f"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 ProgressBars = "49802e3a-d2f1-5c88-81d8-b72133a6f568"
+
+[compat]
+HomotopyContinuation = "2.5"
+julia = "1.9"
+GLMakie = "0.9"
