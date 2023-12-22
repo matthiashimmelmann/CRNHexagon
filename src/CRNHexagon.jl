@@ -293,7 +293,7 @@ end
 #=
 This is the main method. Use it to run all tests.
 =#
-function runTest( ; boxsize=1000, numberOfSamplingRuns=500, prefix="NEW", suffix="")
+function runTest( ; boxsize=1, numberOfSamplingRuns=500, prefix="NEW", suffix="")
     @var K[1:4] κ[1:12]
 
     #We choose colors with maximum distinguishability
