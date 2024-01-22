@@ -351,7 +351,7 @@ function computeCoverInvariants( ; startboxsize=1, finalboxsize=1000, prefix="NE
     ax_prevmodel = Axis(fig[1,2]; title="Baseline Model Won", xlabel=L"$\log(b)+1$", ylabel=L"$\perthousand$")
     ax_nomodel = Axis(fig[1,3]; title="Neither Model Won", xlabel=L"$\log(b)+1$", ylabel=L"$\perthousand$")
     #hidedecorations!(ax_ourmodel); hidedecorations!(ax_prevmodel); hidedecorations!(ax_nomodel);
-    ourmodeldots, prevmodeldots, nomodeldots = [Vector{Float64}([]) for _ in 1:16], [Vector{Float64}([]) for _ in 1:16], [Vector{Float64}([]) for _ in 1:16]
+    ourmodeldots, prevmodeldots, nomodeldots, puremodel = [Vector{Float64}([]) for _ in 1:16], [Vector{Float64}([]) for _ in 1:16], [Vector{Float64}([]) for _ in 1:16], [Vector{Float64}([]) for _ in 1:16]
     xaxis = Vector{Float64}([])
 
     for boxsize in startboxsize:finalboxsize
@@ -368,10 +368,12 @@ function computeCoverInvariants( ; startboxsize=1, finalboxsize=1000, prefix="NE
             continue
         end
 
-        permille_ourmodel, permille_prevmodel, permille_nomodel, percent_ourmodel_pure = round.(10000*ourmodel ./ pointnumber, digits=2), round.(10000*prevmodel ./ pointnumber, digits=2), round.(10000*nomodel ./ pointnumber, digits=2), round.(100 * (pointnumber .- (nomodel .+ prevmodel)) ./ pointnumber, digits=3)
+        permille_ourmodel, permille_prevmodel, permille_nomodel, percent_ourmodel_pure = round.(10000*ourmodel ./ pointnumber, digits=2), round.(10000*prevmodel ./ pointnumber, digits=2), round.(10000*nomodel ./ pointnumber, digits=2), round.(100 * (pointnumber .- (nomodel .+ prevmodel)) ./ pointnumber, digits=5)
         foreach(i->push!(ourmodeldots[i], permille_ourmodel[i]), 1:length(permille_ourmodel))
         foreach(i->push!(prevmodeldots[i], permille_prevmodel[i]), 1:length(permille_ourmodel))
         foreach(i->push!(nomodeldots[i], permille_nomodel[i]), 1:length(permille_ourmodel))
+        foreach(i->push!(puremodel[i], percent_ourmodel_pure[i]), 1:length(percent_ourmodel_pure))
+
         push!(xaxis, log(boxsize)+1)
         
         println("$(boxsize):\t ourmodel\t prevmodel\t nomodel\t ourmodel_pure[%]")
@@ -398,6 +400,13 @@ function computeCoverInvariants( ; startboxsize=1, finalboxsize=1000, prefix="NE
         print("0&~\\\\[.3mm] \\thickhline \n\n")
     end
 
+    for θ in 1:Int(length(puremodel))
+        print("$(θ)&")
+        for i in 1:length(puremodel[θ])
+            print("$(puremodel[θ][i])&")
+        end
+        print("\\\\ \n")
+    end
 
     colors = colormap("Blues", length(ourmodeldots); logscale=false)
     foreach(line->lines!(ax_ourmodel, xaxis, ourmodeldots[line] ./ ourmodeldots[line][1]; linewidth=4, color = colors[line]), 1:length(ourmodeldots))
@@ -482,5 +491,5 @@ function plotNewtonPolytope()
     scatter!(ax, Point3f0([1.98,1.98,1]); markersize=30, color=:red3)
     display(fig)
 end
-
+#computeCoverInvariants()
 end 
