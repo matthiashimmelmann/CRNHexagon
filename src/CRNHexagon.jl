@@ -1,11 +1,12 @@
 module CRNHexagon
 
-import GLMakie: plot!, Point2f0, lines!, Figure, Axis, save, hidespines!, hidedecorations!, mesh!, scatter!, text!, RGBA, RGB, poly!
+import GLMakie: plot!, Point2f0, lines!, Figure, Axis, save, hidespines!, hidedecorations!, mesh!, scatter!, text!, RGBA, RGB, poly!, Axis3, Point3f0
 import HomotopyContinuation: @var, evaluate, Expression
 import LinearAlgebra: inv, det
 import ProgressBars: ProgressBar
 import Colors: distinguishable_colors, red, green, blue, colormap
 import LaTeXStrings: @L_str
+import Polyhedra: Mesh, polyhedron, convexhull
 
 export runTest, computeCoverInvariants, compareTwoCovers, runTest_noDependencies
 
@@ -469,6 +470,17 @@ function empiricalComparisonOfTwoCovers(θsuggestion, θbaseline, K, κ, aη, b�
         scatter!(ax[pic], [Point2f0(pt[(2*(pic-1)+1):(2*(pic-1)+2)]) for pt in vector_our_wins]; color=:green3, markersize=1, markerstrokewidth=0)
     end
     save("../images/bestcoverplots$(cover_1)-$(cover_2).png", fig)
+end
+
+function plotNewtonPolytope()
+    vertices = [[4.,0,2], [2.,2,2], [4.,0,1], [3.,2,1], [2.,3,1], [0.,4,1], [2.,3,0], [2.,2,0], [1.,4,0], [0.,4,0]]
+    p = Mesh(polyhedron(convexhull(vertices...)))
+    fig = Figure(size = (1200,1200);  fontsize=22  )
+    ax = Axis3(fig[1,1], aspect=(1.,1,0.5);)  
+    hidedecorations!(ax, label = false, ticklabels = false, ticks = false, grid = true)  
+    mesh!(ax, p, color=:steelblue; )
+    scatter!(ax, Point3f0([1.98,1.98,1]); markersize=30, color=:red3)
+    display(fig)
 end
 
 end 
