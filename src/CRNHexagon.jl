@@ -368,7 +368,7 @@ function computeCoverInvariants( ; startboxsize=1, finalboxsize=1000, prefix="NE
             continue
         end
 
-        permille_ourmodel, permille_prevmodel, permille_nomodel, percent_ourmodel_pure = round.(10000*ourmodel ./ pointnumber, digits=2), round.(10000*prevmodel ./ pointnumber, digits=2), round.(10000*nomodel ./ pointnumber, digits=2), round.(100 * (pointnumber .- (nomodel .+ prevmodel)) ./ pointnumber, digits=5)
+        permille_ourmodel, permille_prevmodel, permille_nomodel, percent_ourmodel_pure = round.(10000*ourmodel ./ pointnumber, digits=2), round.(10000*prevmodel ./ pointnumber, digits=2), round.(10000*nomodel ./ pointnumber, digits=2), round.(100 * (pointnumber .- (nomodel .+ prevmodel)) ./ pointnumber, digits=3)
         foreach(i->push!(ourmodeldots[i], permille_ourmodel[i]), 1:length(permille_ourmodel))
         foreach(i->push!(prevmodeldots[i], permille_prevmodel[i]), 1:length(permille_ourmodel))
         foreach(i->push!(nomodeldots[i], permille_nomodel[i]), 1:length(permille_ourmodel))
@@ -402,10 +402,11 @@ function computeCoverInvariants( ; startboxsize=1, finalboxsize=1000, prefix="NE
 
     for θ in 1:Int(length(puremodel))
         print("$(θ)&")
-        for i in 1:length(puremodel[θ])
+        for i in 1:length(puremodel[θ])-1
             print("$(puremodel[θ][i])&")
         end
-        print("\\\\ \n")
+        print("$(puremodel[θ][end])")
+        print("\\\\ \\hline \n")
     end
 
     colors = colormap("Blues", length(ourmodeldots); logscale=false)
@@ -491,5 +492,5 @@ function plotNewtonPolytope()
     scatter!(ax, Point3f0([1.98,1.98,1]); markersize=30, color=:red3)
     display(fig)
 end
-#computeCoverInvariants()
+computeCoverInvariants()
 end 
