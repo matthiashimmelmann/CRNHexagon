@@ -1,6 +1,6 @@
 module CRNHexagon
 
-import GLMakie: plot!, Point2f0, lines!, Figure, Axis, save, hidespines!, hidedecorations!, mesh!, scatter!, text!, RGBA, RGB, poly!, Axis3, Point3f0
+import GLMakie: xlims!, ylims!, plot!, Point2f0, lines!, Figure, Axis, save, hidespines!, hidedecorations!, mesh!, scatter!, text!, RGBA, RGB, poly!, Axis3, Point3f0
 import HomotopyContinuation: @var, evaluate, Expression
 import LinearAlgebra: inv, det
 import ProgressBars: ProgressBar
@@ -20,86 +20,94 @@ function createθcircuits(points, coefficients, lineconfigurations, triangconfig
     θ = []
 
     for config in triangconfigurations
-        global barycenter = Matrix{Float64}(undef,3,3); barycenter[1,:] = [points[entry][1] for entry in config[1]]; barycenter[2,:] = [points[entry][2] for entry in config[1]]; barycenter[3,:] = [1 for entry in config[1]];
-        global msolve = [2,1,1];
-        global λ1 = inv(barycenter)*msolve;
-        global λ1 = collect(λ1 / sum(λ1));
+        try
+            global barycenter = Matrix{Float64}(undef,3,3); barycenter[1,:] = [points[entry][1] for entry in config[1]]; barycenter[2,:] = [points[entry][2] for entry in config[1]]; barycenter[3,:] = [1 for entry in config[1]];
+            global msolve = [2,1,1];
+            global λ1 = inv(barycenter)*msolve;
+            global λ1 = collect(λ1 / sum(λ1));
 
-        barycenter[1,:] = [points[entry][1] for entry in config[2]]; barycenter[2,:] = [points[entry][2] for entry in config[2]];
-        global λ2 = inv(barycenter)*msolve;
-        global λ2 = collect(λ2 / sum(λ2));
+            barycenter[1,:] = [points[entry][1] for entry in config[2]]; barycenter[2,:] = [points[entry][2] for entry in config[2]];
+            global λ2 = inv(barycenter)*msolve;
+            global λ2 = collect(λ2 / sum(λ2));
 
-        global barycenterline = Matrix{Float64}(undef,2,2); barycenterline[1,:] = [points[entry][1] for entry in config[3]]; barycenterline[2,:] = [points[entry][2] for entry in config[3]]; 
-        if det(barycenterline) == 0
-            global λ3 = [0.5,0.5]
-        else
-            global λ3 = inv(barycenterline)*[2,1];
-            global λ3 = collect(λ3 / sum(λ3))
+            global barycenterline = Matrix{Float64}(undef,2,2); barycenterline[1,:] = [points[entry][1] for entry in config[3]]; barycenterline[2,:] = [points[entry][2] for entry in config[3]]; 
+            if det(barycenterline) == 0
+                global λ3 = [0.5,0.5]
+            else
+                global λ3 = inv(barycenterline)*[2,1];
+                global λ3 = collect(λ3 / sum(λ3))
+            end
+
+            barycenterline[1,:] = [points[entry][1] for entry in config[4]]; barycenterline[2,:] = [points[entry][2] for entry in config[4]]; 
+            if det(barycenterline) == 0
+                global λ4 = [0.5,0.5]
+            else
+                global λ4 = inv(barycenterline)*[2,1];
+                global λ4 = collect(λ4 / sum(λ4))
+            end
+
+            global θ1 = prod([(coefficients[config[1][i]]/λ1[i])^(λ1[i]) for i in 1:length(config[1])])
+            global θ2 = prod([(coefficients[config[2][i]]/λ2[i])^(λ2[i]) for i in 1:length(config[2])])
+            global θ3 = prod([(coefficients[config[3][i]]/λ3[i])^(λ3[i]) for i in 1:length(config[3])])
+            global θ4 = prod([(coefficients[config[4][i]]/λ4[i])^(λ4[i]) for i in 1:length(config[4])])
+            push!(θ,θ1+θ2+θ3+θ4)
+        catch
+            continue
         end
-
-        barycenterline[1,:] = [points[entry][1] for entry in config[4]]; barycenterline[2,:] = [points[entry][2] for entry in config[4]]; 
-        if det(barycenterline) == 0
-            global λ4 = [0.5,0.5]
-        else
-            global λ4 = inv(barycenterline)*[2,1];
-            global λ4 = collect(λ4 / sum(λ4))
-        end
-
-        global θ1 = prod([(coefficients[config[1][i]]/λ1[i])^(λ1[i]) for i in 1:length(config[1])])
-        global θ2 = prod([(coefficients[config[2][i]]/λ2[i])^(λ2[i]) for i in 1:length(config[2])])
-        global θ3 = prod([(coefficients[config[3][i]]/λ3[i])^(λ3[i]) for i in 1:length(config[3])])
-        global θ4 = prod([(coefficients[config[4][i]]/λ4[i])^(λ4[i]) for i in 1:length(config[4])])
-        push!(θ,θ1+θ2+θ3+θ4)
     end
 
     for config in lineconfigurations
-        global barycenterline = Matrix{Float64}(undef,2,2); barycenterline[1,:] = [points[entry][1] for entry in config[1]]; barycenterline[2,:] = [points[entry][2] for entry in config[1]]; 
-        if det(barycenterline) == 0
-            global λ1=[0.5,0.5]
-        else
-            global λ1 = inv(barycenterline)*[2,1];
-            global λ1 = collect(λ1 / sum(λ1))
-        end
+        try
+            global barycenterline = Matrix{Float64}(undef,2,2); barycenterline[1,:] = [points[entry][1] for entry in config[1]]; barycenterline[2,:] = [points[entry][2] for entry in config[1]]; 
+            if det(barycenterline) == 0
+                global λ1=[0.5,0.5]
+            else
+                global λ1 = inv(barycenterline)*[2,1];
+                global λ1 = collect(λ1 / sum(λ1))
+            end
 
-        barycenterline[1,:] = [points[entry][1] for entry in config[2]]; barycenterline[2,:] = [points[entry][2] for entry in config[2]]; 
-        if det(barycenterline) == 0
-            global λ2=[0.5,0.5]
-        else
-            global λ2 = inv(barycenterline)*[2,1];
-            global λ2 = collect(λ2 / sum(λ2))
-        end
+            barycenterline[1,:] = [points[entry][1] for entry in config[2]]; barycenterline[2,:] = [points[entry][2] for entry in config[2]]; 
+            if det(barycenterline) == 0
+                global λ2=[0.5,0.5]
+            else
+                global λ2 = inv(barycenterline)*[2,1];
+                global λ2 = collect(λ2 / sum(λ2))
+            end
 
-        barycenterline[1,:] = [points[entry][1] for entry in config[3]]; barycenterline[2,:] = [points[entry][2] for entry in config[3]]; 
-        if det(barycenterline) == 0
-            global λ3=[0.5,0.5]
-        else
-            global λ3 = inv(barycenterline)*[2,1];
-            global λ3 = collect(λ3 / sum(λ3))
-        end
+            barycenterline[1,:] = [points[entry][1] for entry in config[3]]; barycenterline[2,:] = [points[entry][2] for entry in config[3]]; 
+            if det(barycenterline) == 0
+                global λ3=[0.5,0.5]
+            else
+                global λ3 = inv(barycenterline)*[2,1];
+                global λ3 = collect(λ3 / sum(λ3))
+            end
 
-        barycenterline[1,:] = [points[entry][1] for entry in config[4]]; barycenterline[2,:] = [points[entry][2] for entry in config[4]]; 
-        if det(barycenterline) == 0
-            global λ4=[0.5,0.5]
-        else
-            global λ4 = inv(barycenterline)*[2,1];
-            global λ4 = collect(λ4 / sum(λ4))
-        end
+            barycenterline[1,:] = [points[entry][1] for entry in config[4]]; barycenterline[2,:] = [points[entry][2] for entry in config[4]]; 
+            if det(barycenterline) == 0
+                global λ4=[0.5,0.5]
+            else
+                global λ4 = inv(barycenterline)*[2,1];
+                global λ4 = collect(λ4 / sum(λ4))
+            end
 
-        global λ5 = [0.5,0.5]
-        barycenterline[1,:] = [points[entry][1] for entry in config[5]]; barycenterline[2,:] = [points[entry][2] for entry in config[5]]; 
-        if det(barycenterline) == 0
-            global λ5=[0.5,0.5]
-        else
-            global λ5 = inv(barycenterline)*[2,1];
-            global λ5 = collect(λ5 / sum(λ5))
-        end
+            global λ5 = [0.5,0.5]
+            barycenterline[1,:] = [points[entry][1] for entry in config[5]]; barycenterline[2,:] = [points[entry][2] for entry in config[5]]; 
+            if det(barycenterline) == 0
+                global λ5=[0.5,0.5]
+            else
+                global λ5 = inv(barycenterline)*[2,1];
+                global λ5 = collect(λ5 / sum(λ5))
+            end
 
-        global θ1 = prod([(coefficients[config[1][i]]/λ1[i])^(λ1[i]) for i in 1:length(config[1])])
-        global θ2 = prod([(coefficients[config[2][i]]/λ2[i])^(λ2[i]) for i in 1:length(config[2])])
-        global θ3 = prod([(coefficients[config[3][i]]/λ3[i])^(λ3[i]) for i in 1:length(config[3])])
-        global θ4 = prod([(coefficients[config[4][i]]/λ4[i])^(λ4[i]) for i in 1:length(config[4])])
-        global θ5 = prod([(coefficients[config[5][i]]/λ5[i])^(λ5[i]) for i in 1:length(config[5])])
-        push!(θ,θ1+θ2+θ3+θ4+θ5)
+            global θ1 = prod([(coefficients[config[1][i]]/λ1[i])^(λ1[i]) for i in 1:length(config[1])])
+            global θ2 = prod([(coefficients[config[2][i]]/λ2[i])^(λ2[i]) for i in 1:length(config[2])])
+            global θ3 = prod([(coefficients[config[3][i]]/λ3[i])^(λ3[i]) for i in 1:length(config[3])])
+            global θ4 = prod([(coefficients[config[4][i]]/λ4[i])^(λ4[i]) for i in 1:length(config[4])])
+            global θ5 = prod([(coefficients[config[5][i]]/λ5[i])^(λ5[i]) for i in 1:length(config[5])])
+            push!(θ,θ1+θ2+θ3+θ4+θ5)
+        catch
+            continue
+        end
     end
 
     return θ
@@ -110,8 +118,9 @@ Here, all 16 configurations are plotted and saved. The colors are optimized with
 TODO Dissociate the individual plots from the rest to generalize this method
 =#
 function plotAllCovers(points, triangconfigurations, lineconfigurations)
-    fourcolors = map(col -> (red(col), green(col), blue(col)), distinguishable_colors(3, [RGB(1,1,1), RGB(0,0,0)], dropseed=true, lchoices = range(25, stop=70, length=14), hchoices = range(120, stop=330, length=30)))
-    fivecolors = map(col -> (red(col), green(col), blue(col)), distinguishable_colors(5, [RGB(1,1,1), RGB(0,0,0)], dropseed=true, lchoices = range(25, stop=70, length=14), hchoices = range(120, stop=330, length=30)))
+    fourcolors = map(col -> (red(col), green(col), blue(col)), distinguishable_colors(3, [RGB(1,1,1), RGB(0,0,0)], dropseed=true, lchoices = range(25, stop=50, length=15), hchoices = range(120, stop=350, length=20)))
+    fivecolors = map(col -> (red(col), green(col), blue(col)), distinguishable_colors(5, [RGB(1,1,1), RGB(0,0,0)], dropseed=true, lchoices = range(25, stop=60, length=20), hchoices = range(120, stop=330, length=30)))
+    display([[Float64(color[1]),Float64(color[2]),Float64(color[3])]*255 for color in fourcolors])
 
     pointsForPlot = [(0,0),(1,0),(2,0),(4,1),(4,2),(3,2),(2,2),(0,1),(0,0)]
     fig = Figure(size=(1200,1200))
@@ -186,6 +195,7 @@ function plotAllCovers(points, triangconfigurations, lineconfigurations)
         scatter!(ax,[Point2f0([2,1])]; color=:red2,markersize=60)
         #GLMakie.text!(ax,[GLMakie.Point2f0([2+0.05,1-0.154])], text=L"$\mu$"; color=:red2,fontsize=70)
         scatter!(ax,[Point2f0(pt) for pt in points]; color=:black,markersize=60)
+        text!(ax,[Point2f0([0.1,1.8])], text=L"%$(findfirst(t->t==config,triangconfigurations))"; color=:black,fontsize=85)
         save("../images/NEWtriangnoline$(findfirst(t->t==config,triangconfigurations)).png",fig)
     end
 
@@ -201,7 +211,7 @@ function plotAllCovers(points, triangconfigurations, lineconfigurations)
         greencolor = RGBA{Float64}(fivecolors[3][1], fivecolors[3][2], fivecolors[3][3], 1)
         bluecolor = RGBA{Float64}(fivecolors[4][1], fivecolors[4][2], fivecolors[4][3], 1)
         yellowcolor = RGBA{Float64}(fivecolors[5][1], fivecolors[5][2], fivecolors[5][3], 1)
-        poly!(ax,[Point2f0(pt) for pt in pointsForPlot]; color=RGBA{Float64}(0.1, 0.1, 0.1, 0.04),strokewidth=0)
+        poly!(ax,[Point2f0(pt) for pt in pointsForPlot]; color=RGBA{Float64}(0.1, 0.1, 0.1, 0.035),strokewidth=0)
 
         if config[3]==[9,10]||config[3]==[10,9]
             lines!(ax,[Point2f0(points[pt]) for pt in [9,10]], color=secondcolor, linewidth=lw)
@@ -230,8 +240,26 @@ function plotAllCovers(points, triangconfigurations, lineconfigurations)
         scatter!(ax,[Point2f0([2,1])]; color=:red2,markersize=60)
         #GLMakie.text!(ax,[GLMakie.Point2f0([2+0.05,1-0.154])], text=L"$\mu$"; color=:red2,fontsize=70)
         scatter!(ax,[Point2f0(pt) for pt in points]; color=:black,markersize=60)
+        text!(ax,[Point2f0([0.1,1.8])], text=L"%$(14+findfirst(t->t==config,lineconfigurations))"; color=:black,fontsize=85)
         save("../images/NEWtriangline$(14+findfirst(t->t==config,lineconfigurations)).png",fig)
     end
+end
+
+function plottriangle()
+    pointsForPlot = [(0,1),(2,0),(4,2)]
+    fig = Figure(size=(1200,1200))
+    ax = Axis(fig[1,1], aspect=1)
+    hidespines!(ax)
+    hidedecorations!(ax)
+    poly!(ax,[Point2f0(pt) for pt in pointsForPlot]; color=RGBA{Float64}(0.1, 0.1, 0.1, 0.04), strokewidth=0)
+    lines!(ax,[Point2f0(pt) for pt in pointsForPlot[vcat(1:3,1)]], color=:black, linewidth=10)
+    scatter!(ax,[Point2f0([2,1])]; color=:red2,markersize=60)
+    text!(ax,[Point2f0([1.675,0.75])], text=L"$(2,1)$"; color=:red2,fontsize=70)
+    scatter!(ax,[Point2f0(pt) for pt in pointsForPlot]; color=:black, markersize=60)
+    text!(ax,[Point2f0([-0.32,1.09]), Point2f0([1.665,-0.25]), Point2f0([3.675,2.065])], text=[L"(0,1)", L"(2,0)", L"(4,2)"]; color=:black,fontsize=70)
+    xlims!(ax,(-0.3,4.3))
+    ylims!(ax,(-0.3,2.3))
+    save("../images/triangexample.png",fig)
 end
 
 #=
@@ -324,7 +352,7 @@ function runTest( ; boxsize=1, numberOfSamplingRuns=500, prefix="NEW", suffix=""
     runSamplingComparison(θ, [κ[3],κ[6],κ[9],κ[12]], K, aη, bη, mcoef, θ[9]; boxsize=boxsize, numberOfSamplingRuns=numberOfSamplingRuns, prefix=prefix, suffix=suffix)
 end
 
-function runTest_noDependencies( ; boxsize=1000, numberOfSamplingRuns=10, prefix="", suffix="noDependencies")
+function runTest_noDependencies( ; boxsize=1, numberOfSamplingRuns=50, prefix="", suffix="noDependencies")
     @var κ[1:11]
 
     hexPoints = [(0,0),(1,0),(2,0),(4,1),(4,2),(3,2),(2,2),(0,1),(3,1),(1,1)]
@@ -341,8 +369,8 @@ function runTest_noDependencies( ; boxsize=1000, numberOfSamplingRuns=10, prefix
 
     lineconfigurations = [[[5,1],[7,3],[8,9],[6,2],[4,10]], [[5,1],[7,3],[9,10],[6,2],[8,4]]]
 
-    θ = createθcircuits(hexPoints, [1,1,1,1,1,1,1,1,2,2] .* (κ[1:10] .^ [10,10,10,9,8,8,8,9,9,9]), lineconfigurations, triangconfigurations)
-    runSamplingComparison(θ, κ[1:11], Vector{Float64}([]), Expression(1), Expression(-1), Expression(-2*κ[11]^9), θ[9]; boxsize=boxsize, numberOfSamplingRuns=numberOfSamplingRuns, prefix=prefix, suffix=suffix)
+    θ = createθcircuits(hexPoints, [1,1,1,1,1,1,1,1,1,1] .* log.(κ[1:10] .+ 1), lineconfigurations, triangconfigurations)
+    runSamplingComparison(θ, κ[1:11], Vector{Float64}([]), Expression(1), Expression(-1), Expression(-log(κ[11]+1)), θ[9]; boxsize=boxsize, numberOfSamplingRuns=numberOfSamplingRuns, prefix=prefix, suffix=suffix)
 end
 
 function computeCoverInvariants( ; startboxsize=1, finalboxsize=1000, prefix="NEW", suffix="")
@@ -382,6 +410,7 @@ function computeCoverInvariants( ; startboxsize=1, finalboxsize=1000, prefix="NE
     end
 
     #print Latex table code
+    #=
     for θ in 1:Int(length(ourmodeldots)/2)
         print("~&+&")
         for i in 1:length(ourmodeldots[θ])
@@ -399,6 +428,16 @@ function computeCoverInvariants( ; startboxsize=1, finalboxsize=1000, prefix="NE
         end
         print("0&~\\\\[.3mm] \\thickhline \n\n")
     end
+    =#
+    print("~&+&-&0&+&-&0&+&-&0\\\\ \\thickhline \n\n")
+    for θ in 1:Int(length(ourmodeldots))
+        print("$(θ)")
+        for i in 1:length(ourmodeldots[θ])
+            print("&$(ourmodeldots[θ][i])&$(prevmodeldots[θ][i])&$(nomodeldots[θ][i])")
+        end
+        print("\\\\ \\hline \n\n")
+    end
+
 
     for θ in 1:Int(length(puremodel))
         print("$(θ)&")
@@ -492,5 +531,203 @@ function plotNewtonPolytope()
     scatter!(ax, Point3f0([1.98,1.98,1]); markersize=30, color=:red3)
     display(fig)
 end
-computeCoverInvariants()
+
+
+function createθcircuits_weighted(points, coefficients, lineconfiguration, triangconfiguration; discretization=20)
+    m = (2,1)
+    λ = []
+    θ = []
+    for weight in 0:1/discretization:1
+        newlineconf = Base.copy(lineconfiguration)
+        newtriangconf = Base.copy(triangconfiguration)
+        helper = []
+        while !isempty(newlineconf)
+            config = pop!(newlineconf)
+            global barycenter = Matrix{Float64}(undef,2,2);
+            barycenter[1,:] = [points[entry][1] for entry in config]; barycenter[2,:] = [points[entry][2] for entry in config]; 
+            if config in newtriangconf
+                deleteat!(newtriangconf, findfirst(triang -> config==triang, newtriangconf))
+                if det(barycenter) == 0
+                    global λ=[0.5,0.5]
+                else
+                    global λ = inv(barycenter)*[2,1];
+                    global λ = collect(λ / sum(λ))
+                end
+                push!(helper, prod([(coefficients[config[i]]/λ[i])^(λ[i]) for i in 1:length(config)]))
+            else
+                if det(barycenter) == 0
+                    global λ=[0.5,0.5]
+                else
+                    global λ = inv(barycenter)*[2,1];
+                    global λ = collect(λ / sum(λ))
+                end
+                push!(helper, prod([(weight*coefficients[config[i]]/λ[i])^(λ[i]) for i in 1:length(config)]))
+            end
+        end
+
+        while !isempty(newtriangconf)
+            config = pop!(newtriangconf)
+            global barycenter = Matrix{Float64}(undef,3,3); barycenter[1,:] = [points[entry][1] for entry in config]; barycenter[2,:] = [points[entry][2] for entry in config]; barycenter[3,:] = [1 for entry in config];
+            global msolve = [2,1,1];
+            global λ = inv(barycenter)*msolve;
+            global λ = collect(λ / sum(λ));
+            push!(helper, prod([((1-weight)*coefficients[config[i]]/λ[i])^(λ[i]) for i in 1:length(config)]))
+        end
+        push!(θ, sum(helper))
+    end
+    return θ
+end
+
+function createθcircuits_weighted2(points, coefficients, configurations; discretization=10)
+    θdict = Dict()
+    for i in 1:length(configurations), j in i+1:length(configurations)#, k in j+1:length(configurations)
+        θarray = []
+        for weight in 0:1/discretization:1#, weight2 in 0:1/discretization:1
+            conf1 = Base.copy(configurations[i])
+            conf2 = Base.copy(configurations[j])
+            #conf3 = Base.copy(configurations[k])
+            helper = []
+            while !isempty(conf1)
+                config = pop!(conf1)
+                if length(config)==2
+                    global barycenter = Matrix{Float64}(undef,2,2);
+                    barycenter[1,:] = [points[entry][1] for entry in config]; barycenter[2,:] = [points[entry][2] for entry in config]; 
+                    if config in conf2# && config in conf3
+                        deleteat!(conf2, findfirst(triang -> config==triang, conf2))
+                        
+                        if det(barycenter) == 0
+                            global λ=[0.5,0.5]
+                        else
+                            global λ = inv(barycenter)*[2,1];
+                            global λ = collect(λ / sum(λ))
+                        end
+                        push!(helper, prod([(coefficients[config[i]]/λ[i])^(λ[i]) for i in 1:length(config)]))
+                    else
+                        if det(barycenter) == 0
+                            global λ=[0.5,0.5]
+                        else
+                            global λ = inv(barycenter)*[2,1];
+                            global λ = collect(λ / sum(λ))
+                        end
+                        push!(helper, prod([(weight*coefficients[config[i]]/λ[i])^(λ[i]) for i in 1:length(config)]))
+                    end
+                elseif length(config)==3
+                    global barycenter = Matrix{Float64}(undef,3,3); barycenter[1,:] = [points[entry][1] for entry in config]; barycenter[2,:] = [points[entry][2] for entry in config]; barycenter[3,:] = [1 for entry in config];
+                    global msolve = [2,1,1];
+                    if config in conf2
+                        deleteat!(conf2, findfirst(triang -> config==triang, conf2))
+                        global λ = inv(barycenter)*msolve;
+                        global λ = collect(λ / sum(λ));
+                        push!(helper, prod([(coefficients[config[i]]/λ[i])^(λ[i]) for i in 1:length(config)]))
+                    else
+                        global λ = inv(barycenter)*msolve;
+                        global λ = collect(λ / sum(λ));
+                        push!(helper, prod([(weight*coefficients[config[i]]/λ[i])^(λ[i]) for i in 1:length(config)]))
+                    end
+                else
+                    throw(error("Configuration has the wrong length!"))
+                end
+            end
+
+            while !isempty(conf2)
+                config = pop!(conf2)
+                if length(config)==2
+                    global barycenter = Matrix{Float64}(undef,2,2);
+                    barycenter[1,:] = [points[entry][1] for entry in config]; barycenter[2,:] = [points[entry][2] for entry in config]; 
+                    if det(barycenter) == 0
+                        global λ=[0.5,0.5]
+                    else
+                        global λ = inv(barycenter)*[2,1];
+                        global λ = collect(λ / sum(λ))
+                    end
+                    push!(helper, prod([(1-weight)*(coefficients[config[i]]/λ[i])^(λ[i]) for i in 1:length(config)]))
+                elseif length(config)==3
+                    global barycenter = Matrix{Float64}(undef,3,3); barycenter[1,:] = [points[entry][1] for entry in config]; barycenter[2,:] = [points[entry][2] for entry in config]; barycenter[3,:] = [1 for entry in config];
+                    global msolve = [2,1,1];
+                    global λ = inv(barycenter)*msolve;
+                    global λ = collect(λ / sum(λ));
+                    push!(helper, prod([(1-weight)*(coefficients[config[i]]/λ[i])^(λ[i]) for i in 1:length(config)]))
+                else
+                    throw(error("Configuration has the wrong length!"))
+                end
+            end
+            push!(θarray, sum(helper))
+        end
+        θdict[(i,j)] = θarray
+    end
+    return θdict
+end
+
+function runSamplingComparison_weighted(θ, κs, Ks, aη, bη, mcoef, θbaseline; boxsize=100, numberOfSamplingRuns=250, prefix="NEW", suffix="")
+    #If the file exists, we add to the previously run tests. Else, we set everything to 0.
+    θkeys = keys(θ)
+    global ourmodel=Dict()
+    try
+        f = open("../data/$(prefix)$(suffix)triangstoredsolutions$(boxsize).txt", "r")
+
+        global pointnumber = parse(Int,readline(f))
+        while ! eof(f)  
+            sstring = split(readline(f), ": ")     
+            key = (parse(Int,sstring[2]), (parse(Int,sstring[5])))
+            ourmodel[key] = [parse(Int,entry) for entry in split(sstring[2:end-1], ", ")]
+         end
+        close(f)
+    catch
+        for key in θkeys
+            ourmodel[key] = [0 for _ in 1:length(θ[key])]
+        end
+    end
+
+    for sampleindex in 1:numberOfSamplingRuns
+        display("Run: $(sampleindex)")
+        global sampling = filter(sampler -> !any(t->isapprox(t,0), sampler) && evaluate(aη,vcat(Ks,κs)=>sampler)>=0 && evaluate(bη,vcat(Ks,κs)=>sampler)<0, [boxsize * abs.(rand(Float64,length(vcat(Ks,κs)))) for _ in 1:1000000])
+        global pointnumber = pointnumber+length(sampling)
+        for ind in ProgressBar(1:length(sampling))
+            sampler = sampling[ind]
+            mval = evaluate(mcoef,vcat(Ks,κs)=>sampler)
+            for key in θkeys
+                for j in 1:length(θ[key])
+                    ourval = evaluate(θ[key][j], vcat(Ks,κs)=>sampler)
+                    if ourval >= -mval
+                        global ourmodel[key][j] += 1
+                    end
+                end
+            end
+        end
+
+        #SAVE the data to the file `NEWtriangstoredsolutions.txt`
+        open("../data/$(prefix)$(suffix)triangstoredsolutions$(boxsize).txt", "w") do file
+            write(file, "$(pointnumber)\n")            
+            for key in keys(ourmodel)
+                write(file, "$(key): $(ourmodel[key])\n")
+            end
+        end
+    end
+
+    #foreach(j->println("Case $(j): Our model performed better in $(100*round(ourmodel[j]/(ourmodel[j]+prevmodel[j]),5))% of the cases, where the other model did not work. No model found anything in $(100*round(nomodel[j]/pointnumber, 5)) of the cases."), 1:length(θ))
+end
+
+
+function runTest_twoBestCovers(; boxsize=100, numberOfSamplingRuns=500, prefix="TWOBEST", suffix="")
+    triangconfiguration = [[1,3,6],[2,5,7],[8,9],[4,10]]
+    lineconfiguration = [[5,1],[7,3],[8,9],[6,2],[4,10]]
+
+    @var K[1:4] κ[1:12]
+
+    #We choose colors with maximum distinguishability
+    hexPoints = [(0,0),(1,0),(2,0),(4,1),(4,2),(3,2),(2,2),(0,1),(3,1),(1,1)]
+    aη = κ[3]*κ[12] - κ[6]*κ[9]
+    bη = (K[2] + K[3])*κ[3]*κ[12] - (K[1]+K[4])*κ[6]*κ[9]
+    coefficients = [K[1]^3*K[3]^2*κ[6]^3*κ[12]^2, K[1]^2*K[2]*K[3]^2*κ[3]*κ[6]^2*κ[12]^2, K[1]^2*K[2]*K[3]*K[4]*κ[3]*κ[6]^2*κ[9]*κ[12], K[1]*K[2]^2*K[4]*κ[3]^2*κ[6]*κ[9]^2,
+                    K[2]^2*K[4]*κ[3]^2*κ[9]*aη, K[2]^2*K[3]*κ[3]^2*κ[12]*aη, K[1]*K[2]*K[3]*κ[3]*κ[6]*κ[12]*aη, K[1]^2*K[3]^2*κ[6]^3*κ[12]^2, 
+                    2*K[1]*K[2]*K[3]*K[4]*κ[3]^2*κ[6]*κ[9]*κ[12], 2*K[1]^2*K[2]*K[3]*κ[3]*κ[6]^2*κ[12]^2]
+    mcoef = K[1]*K[2]*K[3]*κ[3]*κ[6]*κ[12]*bη
+    configurations = [[[1,3,6],[2,5,7],[8,9],[4,10]]#=, [[3,5,8],[1,4,7],[9,10],[2,6]]=#, [[1,5],[3,7],[8,9],[2,6],[4,10]]]
+    all(t->sort(vcat(t...))==[i for i in 1:10], configurations)||throw(error("Not sorted correctly!"))
+    oldθ = createθcircuits(hexPoints, coefficients, [], [[[3,5,8],[1,4,7],[9,10],[2,6]]])[1]
+    θ = createθcircuits_weighted2(hexPoints, coefficients, configurations)
+    #plotAllCovers(hexPoints, triangconfigurations, lineconfigurations)
+    runSamplingComparison_weighted(θ, [κ[3],κ[6],κ[9],κ[12]], K, aη, bη, mcoef, oldθ; boxsize=boxsize, numberOfSamplingRuns=numberOfSamplingRuns, prefix=prefix, suffix=suffix)    
+end
+runTest_twoBestCovers()
 end 
