@@ -1,6 +1,6 @@
 module CRNHexagon
 
-import GLMakie: xlims!, ylims!, plot!, Point2f0, lines!, Figure, Axis, save, hidespines!, hidedecorations!, mesh!, scatter!, text!, RGBA, RGB, poly!, Axis3, Point3f0
+import GLMakie: rotate!, text!, Colorbar, heatmap, heatmap!, xlims!, ylims!, plot!, Point2f0, lines!, Figure, Axis, save, hidespines!, hidedecorations!, mesh!, scatter!, text!, RGBA, RGB, poly!, Axis3, Point3f0
 import HomotopyContinuation: @var, evaluate, Expression
 import LinearAlgebra: inv, det
 import ProgressBars: ProgressBar
@@ -120,7 +120,7 @@ TODO Dissociate the individual plots from the rest to generalize this method
 function plotAllCovers(points, triangconfigurations, lineconfigurations)
     fourcolors = map(col -> (red(col), green(col), blue(col)), distinguishable_colors(3, [RGB(1,1,1), RGB(0,0,0)], dropseed=true, lchoices = range(25, stop=50, length=15), hchoices = range(120, stop=350, length=20)))
     fivecolors = map(col -> (red(col), green(col), blue(col)), distinguishable_colors(5, [RGB(1,1,1), RGB(0,0,0)], dropseed=true, lchoices = range(25, stop=60, length=20), hchoices = range(120, stop=330, length=30)))
-    display([[Float64(color[1]),Float64(color[2]),Float64(color[3])]*255 for color in fourcolors])
+    #display([[Float64(color[1]),Float64(color[2]),Float64(color[3])]*255 for color in fourcolors])
 
     pointsForPlot = [(0,0),(1,0),(2,0),(4,1),(4,2),(3,2),(2,2),(0,1),(0,0)]
     fig = Figure(size=(1200,1200))
@@ -271,20 +271,40 @@ true, we add 1 to `prevmodel`. If neither model recognizes nonnegativity, we add
 =#
 function runSamplingComparison(θ, κs, Ks, aη, bη, mcoef, θbaseline; boxsize=100, numberOfSamplingRuns=250, prefix="NEW", suffix="")
     #If the file exists, we add to the previously run tests. Else, we set everything to 0.
+    global relDict = Dict()
     try
         f = open("../data/$(prefix)$(suffix)triangstoredsolutions$(boxsize).txt", "r")
 
         global pointnumber = parse(Int,readline(f))
+        #global allmodels = parse(Int,readline(f))
+        #global onlyonemodel = [parse(Int,entry) for entry in split(readline(f)[2:end-1], ", ")]
+        global newmodel = [parse(Int,entry) for entry in split(readline(f)[2:end-1], ", ")]
         global ourmodel = [parse(Int,entry) for entry in split(readline(f)[2:end-1], ", ")]
         global prevmodel = [parse(Int,entry) for entry in split(readline(f)[2:end-1], ", ")]
         global nomodel = [parse(Int,entry) for entry in split(readline(f)[2:end-1], ", ")]
 
+        while ! eof(f)  
+            sstring = split(readline(f), ": ")
+            keystring = split(sstring[1], ", ")
+            key = (parse(Int,keystring[1]), (parse(Int,keystring[2])))
+            relDict[key] = parse(Int,sstring[2])
+         end
+
         close(f)
     catch
         global pointnumber = 0
+        global allmodels = 0
+        global onlyonemodel = [0 for _ in 1:length(θ)]
+        global newmodel = [0 for _ in 1:length(θ)]
         global ourmodel = [0 for _ in 1:length(θ)]
         global prevmodel = [0 for _ in 1:length(θ)]
         global nomodel = [0 for _ in 1:length(θ)]
+
+        for i in 1:length(θ), j in 1:length(θ)
+            if i!=j
+                #relDict[(i,j)] = 0
+            end
+        end
     end
 
     for sampleindex in 1:numberOfSamplingRuns
@@ -297,6 +317,9 @@ function runSamplingComparison(θ, κs, Ks, aη, bη, mcoef, θbaseline; boxsize
             prevval = evaluate(θbaseline, vcat(Ks,κs)=>sampler)
             for j in 1:length(θ)
                 ourval = evaluate(θ[j], vcat(Ks,κs)=>sampler)
+                if ourval >= -mval
+                    global newmodel[j] += 1
+                end
                 if ourval >= -mval && prevval < -mval
                     global ourmodel[j] += 1
                 elseif ourval < -mval && prevval >= -mval
@@ -305,24 +328,88 @@ function runSamplingComparison(θ, κs, Ks, aη, bη, mcoef, θbaseline; boxsize
                     global nomodel[j] += 1
                 end
             end
+            #=
+            indicator, winnerarray = false, []
+            for i in 1:length(θ), j in i+1:length(θ)
+                val1 = evaluate(θ[i], vcat(Ks,κs)=>sampler)
+                val2 = evaluate(θ[j], vcat(Ks,κs)=>sampler)
+                if val1 >= -mval && val2 < -mval
+                    push!(winnerarray, i)
+                    relDict[(i,j)] += 1
+                elseif val2 >= -mval && val1 < -mval
+                    push!(winnerarray, j)
+                    relDict[(j,i)] += 1
+                end
+
+                if val2 >= -mval || val1 >= -mval
+                    indicator = true
+                end
+            end
+            if length(collect(Set(winnerarray))) == 1
+                onlyonemodel[winnerarray[1]]+=1
+            end
+            global allmodels += indicator ? 1 : 0 
+            =#
         end
 
         #SAVE the data to the file `NEWtriangstoredsolutions.txt`
         open("../data/$(prefix)$(suffix)triangstoredsolutions$(boxsize).txt", "w") do file
             write(file, "$(pointnumber)\n")
+            #write(file, "$(allmodels)\n")
+            #write(file, "$(onlyonemodel)\n")
+            write(file, "$(newmodel)\n")
             write(file, "$(ourmodel)\n")
             write(file, "$(prevmodel)\n")
             write(file, "$(nomodel)\n")
+            #=for key in keys(relDict)
+                write(file, "$(key[1]), $(key[2]): $(relDict[key])\n")
+            end=#
         end
     end
 
     #foreach(j->println("Case $(j): Our model performed better in $(100*round(ourmodel[j]/(ourmodel[j]+prevmodel[j]),5))% of the cases, where the other model did not work. No model found anything in $(100*round(nomodel[j]/pointnumber, 5)) of the cases."), 1:length(θ))
 end
 
+function printValues( ; prefix="relTest", suffix="NEW")
+    for boxsize in [1,10,100,1000]
+        print("$(boxsize): \n")
+        f = open("../data/$(prefix)$(suffix)triangstoredsolutions$(boxsize).txt", "r")
+        global relDict = Dict()
+        global pointnumber = parse(Int,readline(f))
+        global allmodels = parse(Int,readline(f))
+        global onlyonemodel = [parse(Int,entry) for entry in split(readline(f)[2:end-1], ", ")]
+        global newmodel = [parse(Int,entry) for entry in split(readline(f)[2:end-1], ", ")]
+        global ourmodel = [parse(Int,entry) for entry in split(readline(f)[2:end-1], ", ")]
+        global prevmodel = [parse(Int,entry) for entry in split(readline(f)[2:end-1], ", ")]
+        global nomodel = [parse(Int,entry) for entry in split(readline(f)[2:end-1], ", ")]
+
+        while ! eof(f)  
+            sstring = split(readline(f), ": ")
+            keystring = split(sstring[1], ", ")
+            key = (parse(Int,keystring[1]), (parse(Int,keystring[2])))
+            relDict[key] = parse(Int,sstring[2])
+        end
+
+        close(f)
+        println(onlyonemodel)
+        containmentArray, almostContainmentArray = [[] for _ in 1:16], [[] for _ in 1:16]
+        for key in keys(relDict)
+            if relDict[key]==0
+                push!(containmentArray[key[1]], key[2])
+            elseif relDict[key]<3
+                push!(almostContainmentArray[key[1]], key[2])
+            end
+        end
+        println("Containment")
+        foreach(t->println("$(t): $(containmentArray[t])"), 1:16)
+        println("AlmostContainment")
+        foreach(t->println("$(t): $(almostContainmentArray[t])"), 1:16)
+    end
+end
 #=
 This is the main method. Use it to run all tests.
 =#
-function runTest( ; boxsize=1, numberOfSamplingRuns=500, prefix="NEW", suffix="")
+function runTest( ; boxsize=1000, numberOfSamplingRuns=100, prefix="relTest", suffix="NEW")
     @var K[1:4] κ[1:12]
 
     #We choose colors with maximum distinguishability
@@ -348,11 +435,42 @@ function runTest( ; boxsize=1, numberOfSamplingRuns=500, prefix="NEW", suffix=""
     lineconfigurations = [[[5,1],[7,3],[8,9],[6,2],[4,10]], [[5,1],[7,3],[9,10],[6,2],[8,4]]]
 
     θ = createθcircuits(hexPoints, coefficients, lineconfigurations, triangconfigurations)
-    plotAllCovers(hexPoints, triangconfigurations, lineconfigurations)
+    #plotAllCovers(hexPoints, triangconfigurations, lineconfigurations)
     runSamplingComparison(θ, [κ[3],κ[6],κ[9],κ[12]], K, aη, bη, mcoef, θ[9]; boxsize=boxsize, numberOfSamplingRuns=numberOfSamplingRuns, prefix=prefix, suffix=suffix)
 end
 
-function runTest_noDependencies( ; boxsize=1, numberOfSamplingRuns=50, prefix="", suffix="noDependencies")
+function runTest( ; boxsize=1000, numberOfSamplingRuns=100, prefix="relTest", suffix="NEW")
+    @var K[1:4] κ[1:12]
+
+    #We choose colors with maximum distinguishability
+    hexPoints = [(0,0),(1,0),(2,0),(4,1),(4,2),(3,2),(2,2),(0,1),(3,1),(1,1)]
+    aη = κ[3]*κ[12] - κ[6]*κ[9]
+    bη = (K[2] + K[3])*κ[3]*κ[12] - (K[1]+K[4])*κ[6]*κ[9]
+    coefficients = [K[1]^3*K[3]^2*κ[6]^3*κ[12]^2, K[1]^2*K[2]*K[3]^2*κ[3]*κ[6]^2*κ[12]^2, K[1]^2*K[2]*K[3]*K[4]*κ[3]*κ[6]^2*κ[9]*κ[12], K[1]*K[2]^2*K[4]*κ[3]^2*κ[6]*κ[9]^2,
+                    K[2]^2*K[4]*κ[3]^2*κ[9]*aη, K[2]^2*K[3]*κ[3]^2*κ[12]*aη, K[1]*K[2]*K[3]*κ[3]*κ[6]*κ[12]*aη, K[1]^2*K[3]^2*κ[6]^3*κ[12]^2, 
+                    2*K[1]*K[2]*K[3]*K[4]*κ[3]^2*κ[6]*κ[9]*κ[12], 2*K[1]^2*K[2]*K[3]*κ[3]*κ[6]^2*κ[12]^2]
+    mcoef = K[1]*K[2]*K[3]*κ[3]*κ[6]*κ[12]*bη
+
+    triangconfigurations = [[[2,7,9],[3,6,10],[1,5],[4,8]], [[3,6,10],[2,4,7],[1,5],[8,9]], [[1,3,6],[2,5,7],[9,10],[4,8]],
+    [[1,3,6],[2,5,7],[8,9],[4,10]], [[3,6,8],[2,7,9],[4,10],[1,5]], [[2,4,7],[3,6,8],[1,5],[9,10]],
+    [[1,4,6],[2,5,8],[3,7],[9,10]], [[1,7,9],[3,5,10],[2,6],[4,8]], [[3,5,8],[1,4,7],[9,10],[2,6]],
+    [[1,7,9],[3,5,8],[2,6],[4,10]], [[1,6,9],[2,5,8],[3,7],[4,10]], [[1,4,7],[3,5,10],[8,9],[2,6]],
+    [[2,5,10],[1,4,6],[3,7],[8,9]], [[1,6,9],[2,5,10],[3,7],[4,8]]]
+    #Check if all covers are legit
+    for config in triangconfigurations
+        all(t->t in union(config[1],config[2],config[3],config[4]),1:10) || display(config)&&throw(error("The triangles don't cover the entire region"))
+        isempty(intersect(config[1],config[2])) && isempty(intersect(config[1],config[3])) && isempty(intersect(config[1],config[4])) && isempty(intersect(config[2],config[3])) && isempty(intersect(config[2],config[4])) && isempty(intersect(config[3],config[4])) || display(config)&&throw(error("Each vertex should only be used once"))
+    end
+
+    lineconfigurations = [[[5,1],[7,3],[8,9],[6,2],[4,10]], [[5,1],[7,3],[9,10],[6,2],[8,4]]]
+
+    θ = createθcircuits(hexPoints, coefficients, lineconfigurations, triangconfigurations)
+    #plotAllCovers(hexPoints, triangconfigurations, lineconfigurations)
+    runSamplingComparison(θ, [κ[3],κ[6],κ[9],κ[12]], K, aη, bη, mcoef, θ[9]; boxsize=boxsize, numberOfSamplingRuns=numberOfSamplingRuns, prefix=prefix, suffix=suffix)
+end
+
+
+function runTest_noDependencies( ; boxsize=1000, numberOfSamplingRuns=62, prefix="", suffix="noDependencies")
     @var κ[1:11]
 
     hexPoints = [(0,0),(1,0),(2,0),(4,1),(4,2),(3,2),(2,2),(0,1),(3,1),(1,1)]
@@ -369,8 +487,8 @@ function runTest_noDependencies( ; boxsize=1, numberOfSamplingRuns=50, prefix=""
 
     lineconfigurations = [[[5,1],[7,3],[8,9],[6,2],[4,10]], [[5,1],[7,3],[9,10],[6,2],[8,4]]]
 
-    θ = createθcircuits(hexPoints, [1,1,1,1,1,1,1,1,1,1] .* log.(κ[1:10] .+ 1), lineconfigurations, triangconfigurations)
-    runSamplingComparison(θ, κ[1:11], Vector{Float64}([]), Expression(1), Expression(-1), Expression(-log(κ[11]+1)), θ[9]; boxsize=boxsize, numberOfSamplingRuns=numberOfSamplingRuns, prefix=prefix, suffix=suffix)
+    θ = createθcircuits(hexPoints, Vector{Expression}(κ[1:10]), lineconfigurations, triangconfigurations)
+    runSamplingComparison(θ, κ[1:11], Vector{Float64}([]), Expression(1), Expression(-1), Expression(-κ[11]), θ[9]; boxsize=boxsize, numberOfSamplingRuns=numberOfSamplingRuns, prefix=prefix, suffix=suffix)
 end
 
 function computeCoverInvariants( ; startboxsize=1, finalboxsize=1000, prefix="NEW", suffix="")
@@ -379,14 +497,15 @@ function computeCoverInvariants( ; startboxsize=1, finalboxsize=1000, prefix="NE
     ax_prevmodel = Axis(fig[1,2]; title="Baseline Model Won", xlabel=L"$\log(b)+1$", ylabel=L"$\perthousand$")
     ax_nomodel = Axis(fig[1,3]; title="Neither Model Won", xlabel=L"$\log(b)+1$", ylabel=L"$\perthousand$")
     #hidedecorations!(ax_ourmodel); hidedecorations!(ax_prevmodel); hidedecorations!(ax_nomodel);
-    ourmodeldots, prevmodeldots, nomodeldots, puremodel = [Vector{Float64}([]) for _ in 1:16], [Vector{Float64}([]) for _ in 1:16], [Vector{Float64}([]) for _ in 1:16], [Vector{Float64}([]) for _ in 1:16]
+    allmodeldots, ourmodeldots, prevmodeldots, nomodeldots, puremodel = [Vector{Float64}([]) for _ in 1:16], [Vector{Float64}([]) for _ in 1:16], [Vector{Float64}([]) for _ in 1:16], [Vector{Float64}([]) for _ in 1:16], [Vector{Float64}([]) for _ in 1:16]
     xaxis = Vector{Float64}([])
 
     for boxsize in startboxsize:finalboxsize
         try
             f = open("../data/$(prefix)$(suffix)triangstoredsolutions$(boxsize).txt", "r")
-    
+            
             global pointnumber = parse(Int,readline(f))
+            global allpoints = [parse(Int,entry) for entry in split(readline(f)[2:end-1], ", ")]
             global ourmodel = [parse(Int,entry) for entry in split(readline(f)[2:end-1], ", ")]
             global prevmodel = [parse(Int,entry) for entry in split(readline(f)[2:end-1], ", ")]
             global nomodel = [parse(Int,entry) for entry in split(readline(f)[2:end-1], ", ")]
@@ -396,7 +515,8 @@ function computeCoverInvariants( ; startboxsize=1, finalboxsize=1000, prefix="NE
             continue
         end
 
-        permille_ourmodel, permille_prevmodel, permille_nomodel, percent_ourmodel_pure = round.(10000*ourmodel ./ pointnumber, digits=2), round.(10000*prevmodel ./ pointnumber, digits=2), round.(10000*nomodel ./ pointnumber, digits=2), round.(100 * (pointnumber .- (nomodel .+ prevmodel)) ./ pointnumber, digits=3)
+        permille_allmodels, permille_ourmodel, permille_prevmodel, permille_nomodel, percent_ourmodel_pure = round.(round.(10000*allpoints ./ pointnumber, digits=2)/10000, digits=6), round.(10000*ourmodel ./ pointnumber, digits=2), round.(10000*prevmodel ./ pointnumber, digits=2), round.(10000*nomodel ./ pointnumber, digits=2), round.(100 * (pointnumber .- (nomodel .+ prevmodel)) ./ pointnumber, digits=3)
+        foreach(i->push!(allmodeldots[i], permille_allmodels[i]), 1:length(permille_allmodels))
         foreach(i->push!(ourmodeldots[i], permille_ourmodel[i]), 1:length(permille_ourmodel))
         foreach(i->push!(prevmodeldots[i], permille_prevmodel[i]), 1:length(permille_ourmodel))
         foreach(i->push!(nomodeldots[i], permille_nomodel[i]), 1:length(permille_ourmodel))
@@ -439,12 +559,12 @@ function computeCoverInvariants( ; startboxsize=1, finalboxsize=1000, prefix="NE
     end
 
 
-    for θ in 1:Int(length(puremodel))
+    for θ in 1:Int(length(allmodeldots))
         print("$(θ)&")
-        for i in 1:length(puremodel[θ])-1
-            print("$(puremodel[θ][i])&")
+        for i in 1:length(allmodeldots[θ])-1
+            print("$(allmodeldots[θ][i])&")
         end
-        print("$(puremodel[θ][end])")
+        print("$(allmodeldots[θ][end])")
         print("\\\\ \\hline \n")
     end
 
@@ -532,149 +652,115 @@ function plotNewtonPolytope()
     display(fig)
 end
 
-
-function createθcircuits_weighted(points, coefficients, lineconfiguration, triangconfiguration; discretization=20)
-    m = (2,1)
-    λ = []
-    θ = []
-    for weight in 0:1/discretization:1
-        newlineconf = Base.copy(lineconfiguration)
-        newtriangconf = Base.copy(triangconfiguration)
-        helper = []
-        while !isempty(newlineconf)
-            config = pop!(newlineconf)
-            global barycenter = Matrix{Float64}(undef,2,2);
-            barycenter[1,:] = [points[entry][1] for entry in config]; barycenter[2,:] = [points[entry][2] for entry in config]; 
-            if config in newtriangconf
-                deleteat!(newtriangconf, findfirst(triang -> config==triang, newtriangconf))
-                if det(barycenter) == 0
-                    global λ=[0.5,0.5]
-                else
-                    global λ = inv(barycenter)*[2,1];
-                    global λ = collect(λ / sum(λ))
-                end
-                push!(helper, prod([(coefficients[config[i]]/λ[i])^(λ[i]) for i in 1:length(config)]))
-            else
-                if det(barycenter) == 0
-                    global λ=[0.5,0.5]
-                else
-                    global λ = inv(barycenter)*[2,1];
-                    global λ = collect(λ / sum(λ))
-                end
-                push!(helper, prod([(weight*coefficients[config[i]]/λ[i])^(λ[i]) for i in 1:length(config)]))
-            end
-        end
-
-        while !isempty(newtriangconf)
-            config = pop!(newtriangconf)
-            global barycenter = Matrix{Float64}(undef,3,3); barycenter[1,:] = [points[entry][1] for entry in config]; barycenter[2,:] = [points[entry][2] for entry in config]; barycenter[3,:] = [1 for entry in config];
-            global msolve = [2,1,1];
-            global λ = inv(barycenter)*msolve;
-            global λ = collect(λ / sum(λ));
-            push!(helper, prod([((1-weight)*coefficients[config[i]]/λ[i])^(λ[i]) for i in 1:length(config)]))
-        end
-        push!(θ, sum(helper))
-    end
-    return θ
-end
-
-function createθcircuits_weighted2(points, coefficients, configurations; discretization=10)
+function createθcircuits_weighted(points, coefficients, configurations; discretization=25)
     θdict = Dict()
-    for i in 1:length(configurations), j in i+1:length(configurations)#, k in j+1:length(configurations)
-        θarray = []
-        for weight in 0:1/discretization:1#, weight2 in 0:1/discretization:1
-            conf1 = Base.copy(configurations[i])
-            conf2 = Base.copy(configurations[j])
-            #conf3 = Base.copy(configurations[k])
-            helper = []
-            while !isempty(conf1)
-                config = pop!(conf1)
+    length(configurations)>=3 || throw(error("Since we are providing a 2D heatmap of the covers, at least 3 simplicial configurations need to be provided!"))
+    for i in 1:length(configurations), j in i+1:length(configurations), k in j+1:length(configurations)
+        ijkDict = Dict()
+        for ω1 in 0:1/discretization:1
+            ijkDict[ω1] = []
+        end
+
+        for ω1 in 0:round(1/discretization, sigdigits=5):1, ω2 in 0:round(1/discretization, sigdigits=5):round(1-ω1, sigdigits=5)
+            configuration1, configuration2, configuration3, helper = Base.copy(configurations[i]), Base.copy(configurations[j]), Base.copy(configurations[k]), []
+            while !isempty(configuration1)
+                config = pop!(configuration1)
                 if length(config)==2
-                    global barycenter = Matrix{Float64}(undef,2,2);
-                    barycenter[1,:] = [points[entry][1] for entry in config]; barycenter[2,:] = [points[entry][2] for entry in config]; 
-                    if config in conf2# && config in conf3
-                        deleteat!(conf2, findfirst(triang -> config==triang, conf2))
-                        
-                        if det(barycenter) == 0
-                            global λ=[0.5,0.5]
-                        else
-                            global λ = inv(barycenter)*[2,1];
-                            global λ = collect(λ / sum(λ))
-                        end
+                    global barycenter = Matrix{Float64}(undef,2,2); barycenter[1,:] = [points[entry][1] for entry in config]; barycenter[2,:] = [points[entry][2] for entry in config]; 
+                    global λ = (det(barycenter) == 0) ? [0.5,0.5] : collect(inv(barycenter)*[2,1] / sum(inv(barycenter)*[2,1]))
+
+                    if config in configuration2 && config in configuration3
+                        deleteat!(configuration2, findfirst(entry -> config==entry, configuration2))
+                        deleteat!(configuration3, findfirst(entry -> config==entry, configuration3))
                         push!(helper, prod([(coefficients[config[i]]/λ[i])^(λ[i]) for i in 1:length(config)]))
+                    elseif config in configuration2 || config in configuration3
+                        (config in configuration2) ? deleteat!(configuration2, findfirst(entry -> config==entry, configuration2)) : deleteat!(configuration3, findfirst(entry -> config==entry, configuration3))
+                        push!(helper, prod([(((config in configuration2) ? ω1+ω2 : 1-ω2)*coefficients[config[i]]/λ[i])^(λ[i]) for i in 1:length(config)]))
                     else
-                        if det(barycenter) == 0
-                            global λ=[0.5,0.5]
-                        else
-                            global λ = inv(barycenter)*[2,1];
-                            global λ = collect(λ / sum(λ))
-                        end
-                        push!(helper, prod([(weight*coefficients[config[i]]/λ[i])^(λ[i]) for i in 1:length(config)]))
+                        push!(helper, prod([(ω1*coefficients[config[i]]/λ[i])^(λ[i]) for i in 1:length(config)]))
                     end
                 elseif length(config)==3
-                    global barycenter = Matrix{Float64}(undef,3,3); barycenter[1,:] = [points[entry][1] for entry in config]; barycenter[2,:] = [points[entry][2] for entry in config]; barycenter[3,:] = [1 for entry in config];
-                    global msolve = [2,1,1];
-                    if config in conf2
-                        deleteat!(conf2, findfirst(triang -> config==triang, conf2))
-                        global λ = inv(barycenter)*msolve;
-                        global λ = collect(λ / sum(λ));
+                    global barycenter, msolve = Matrix{Float64}(undef,3,3), [2,1,1]; barycenter[1,:] = [points[entry][1] for entry in config]; barycenter[2,:] = [points[entry][2] for entry in config]; barycenter[3,:] = [1 for entry in config];
+                    global λ = collect(inv(barycenter)*msolve / sum(inv(barycenter)*msolve));
+                    if config in configuration2 && config in configuration3
+                        deleteat!(configuration2, findfirst(entry -> config==entry, configuration2))
                         push!(helper, prod([(coefficients[config[i]]/λ[i])^(λ[i]) for i in 1:length(config)]))
+                    elseif config in configuration2 || config in configuration3
+                        (config in configuration2) ? deleteat!(configuration2, findfirst(entry -> config==entry, configuration2)) : deleteat!(configuration3, findfirst(entry -> config==entry, configuration3))
+                        push!(helper, prod([(((config in configuration2) ? ω1+ω2 : 1-ω2)*coefficients[config[i]]/λ[i])^(λ[i]) for i in 1:length(config)]))
                     else
-                        global λ = inv(barycenter)*msolve;
-                        global λ = collect(λ / sum(λ));
-                        push!(helper, prod([(weight*coefficients[config[i]]/λ[i])^(λ[i]) for i in 1:length(config)]))
+                        push!(helper, prod([(ω1*coefficients[config[i]]/λ[i])^(λ[i]) for i in 1:length(config)]))
                     end
-                else
-                    throw(error("Configuration has the wrong length!"))
                 end
             end
 
-            while !isempty(conf2)
-                config = pop!(conf2)
+            while !isempty(configuration2)
+                config = pop!(configuration2)
                 if length(config)==2
-                    global barycenter = Matrix{Float64}(undef,2,2);
-                    barycenter[1,:] = [points[entry][1] for entry in config]; barycenter[2,:] = [points[entry][2] for entry in config]; 
-                    if det(barycenter) == 0
-                        global λ=[0.5,0.5]
+                    global barycenter = Matrix{Float64}(undef,2,2); barycenter[1,:] = [points[entry][1] for entry in config]; barycenter[2,:] = [points[entry][2] for entry in config]; 
+                    global λ = (det(barycenter) == 0) ? [0.5,0.5] : collect(inv(barycenter)*[2,1] / sum(inv(barycenter)*[2,1]))
+                    if config in configuration3
+                        deleteat!(configuration3, findfirst(entry -> config==entry, configuration3))
+                        push!(helper, prod([((1-ω1)*coefficients[config[i]]/λ[i])^(λ[i]) for i in 1:length(config)]))
                     else
-                        global λ = inv(barycenter)*[2,1];
-                        global λ = collect(λ / sum(λ))
+                        push!(helper, prod([(ω2*coefficients[config[i]]/λ[i])^(λ[i]) for i in 1:length(config)]))
                     end
-                    push!(helper, prod([(1-weight)*(coefficients[config[i]]/λ[i])^(λ[i]) for i in 1:length(config)]))
                 elseif length(config)==3
-                    global barycenter = Matrix{Float64}(undef,3,3); barycenter[1,:] = [points[entry][1] for entry in config]; barycenter[2,:] = [points[entry][2] for entry in config]; barycenter[3,:] = [1 for entry in config];
-                    global msolve = [2,1,1];
-                    global λ = inv(barycenter)*msolve;
-                    global λ = collect(λ / sum(λ));
-                    push!(helper, prod([(1-weight)*(coefficients[config[i]]/λ[i])^(λ[i]) for i in 1:length(config)]))
-                else
-                    throw(error("Configuration has the wrong length!"))
+                    global barycenter, msolve = Matrix{Float64}(undef,3,3), [2,1,1]; barycenter[1,:] = [points[entry][1] for entry in config]; barycenter[2,:] = [points[entry][2] for entry in config]; barycenter[3,:] = [1 for entry in config];
+                    global λ = collect(inv(barycenter)*msolve / sum(inv(barycenter)*msolve));
+                    if config in configuration3
+                        deleteat!(configuration3, findfirst(entry -> config==entry, configuration3))
+                        push!(helper, prod([((1-ω1)*coefficients[config[i]]/λ[i])^(λ[i]) for i in 1:length(config)]))
+                    else
+                        push!(helper, prod([(ω2*coefficients[config[i]]/λ[i])^(λ[i]) for i in 1:length(config)]))
+                    end
                 end
             end
-            push!(θarray, sum(helper))
+
+            while !isempty(configuration3)
+                config = pop!(configuration3)
+                if length(config)==2
+                    global barycenter = Matrix{Float64}(undef,2,2); barycenter[1,:] = [points[entry][1] for entry in config]; barycenter[2,:] = [points[entry][2] for entry in config]; 
+                    global λ = (det(barycenter) == 0) ? [0.5,0.5] : collect(inv(barycenter)*[2,1] / sum(inv(barycenter)*[2,1]))
+                    push!(helper, prod([((1-ω1-ω2)*coefficients[config[i]]/λ[i])^(λ[i]) for i in 1:length(config)]))
+                elseif length(config)==3
+                    global barycenter, msolve = Matrix{Float64}(undef,3,3), [2,1,1]; barycenter[1,:] = [points[entry][1] for entry in config]; barycenter[2,:] = [points[entry][2] for entry in config]; barycenter[3,:] = [1 for entry in config];
+                    global λ = collect(inv(barycenter)*msolve / sum(inv(barycenter)*msolve));
+                    push!(helper, prod([((1-ω1-ω2)*coefficients[config[i]]/λ[i])^(λ[i]) for i in 1:length(config)]))
+                end
+            end
+
+            push!(ijkDict[ω1], sum(helper))
         end
-        θdict[(i,j)] = θarray
+        θdict[(i,j,k)] = ijkDict
+        println(length.(values(θdict[(i,j,k)])))
     end
     return θdict
 end
 
-function runSamplingComparison_weighted(θ, κs, Ks, aη, bη, mcoef, θbaseline; boxsize=100, numberOfSamplingRuns=250, prefix="NEW", suffix="")
+function runSamplingComparison_weighted(θ, κs, Ks, aη, bη, mcoef, θbaseline; discretization, boxsize=100, numberOfSamplingRuns=250, prefix="NEW", suffix="")
     #If the file exists, we add to the previously run tests. Else, we set everything to 0.
     θkeys = keys(θ)
-    global ourmodel=Dict()
+    ourmodel = Dict()
     try
         f = open("../data/$(prefix)$(suffix)triangstoredsolutions$(boxsize).txt", "r")
 
         global pointnumber = parse(Int,readline(f))
         while ! eof(f)  
-            sstring = split(readline(f), ": ")     
-            key = (parse(Int,sstring[2]), (parse(Int,sstring[5])))
-            ourmodel[key] = [parse(Int,entry) for entry in split(sstring[2:end-1], ", ")]
+            sstring = split(readline(f), ": ")
+            keystring = split(sstring[1], "; ")
+            key = (parse(Int,keystring[1][2]), (parse(Int,keystring[1][5])), (parse(Int,keystring[1][8])))
+            weight = parse(Float64,keystring[2])
+            ourmodel[(key, weight)] = [parse(Int,entry) for entry in split(sstring[2][2:end-1], ", ")]
          end
         close(f)
     catch
+        global pointnumber = 0
         for key in θkeys
-            ourmodel[key] = [0 for _ in 1:length(θ[key])]
+            ijkkeys = keys(θ[key])
+            for weight in ijkkeys
+                ourmodel[(key, weight)] = [0 for _ in 1:length(θ[key][weight])]
+            end
         end
     end
 
@@ -684,12 +770,14 @@ function runSamplingComparison_weighted(θ, κs, Ks, aη, bη, mcoef, θbaseline
         global pointnumber = pointnumber+length(sampling)
         for ind in ProgressBar(1:length(sampling))
             sampler = sampling[ind]
-            mval = evaluate(mcoef,vcat(Ks,κs)=>sampler)
+            mval = real(evaluate(mcoef,vcat(Ks,κs)=>sampler))
             for key in θkeys
-                for j in 1:length(θ[key])
-                    ourval = evaluate(θ[key][j], vcat(Ks,κs)=>sampler)
-                    if ourval >= -mval
-                        global ourmodel[key][j] += 1
+                for weight in keys(θ[key])
+                    for j in 1:length(θ[key][weight])
+                        ourval = evaluate(θ[key][weight][j], vcat(Ks,κs)=>sampler)
+                        if real(ourval) >= -mval
+                            global ourmodel[(key,weight)][j] += 1
+                        end
                     end
                 end
             end
@@ -699,7 +787,7 @@ function runSamplingComparison_weighted(θ, κs, Ks, aη, bη, mcoef, θbaseline
         open("../data/$(prefix)$(suffix)triangstoredsolutions$(boxsize).txt", "w") do file
             write(file, "$(pointnumber)\n")            
             for key in keys(ourmodel)
-                write(file, "$(key): $(ourmodel[key])\n")
+                write(file, "$(key[1]); $(key[2]): $(ourmodel[key])\n")
             end
         end
     end
@@ -707,11 +795,66 @@ function runSamplingComparison_weighted(θ, κs, Ks, aη, bη, mcoef, θbaseline
     #foreach(j->println("Case $(j): Our model performed better in $(100*round(ourmodel[j]/(ourmodel[j]+prevmodel[j]),5))% of the cases, where the other model did not work. No model found anything in $(100*round(nomodel[j]/pointnumber, 5)) of the cases."), 1:length(θ))
 end
 
+function plotWeightedCovers(; boxsize=10, prefix="TWOBEST", suffix="4,10,15")
+    helperDict, ourmodel = Dict(), Dict()
+    try
+        f = open("../data/$(prefix)$(suffix)triangstoredsolutions$(boxsize).txt", "r")
 
-function runTest_twoBestCovers(; boxsize=100, numberOfSamplingRuns=500, prefix="TWOBEST", suffix="")
-    triangconfiguration = [[1,3,6],[2,5,7],[8,9],[4,10]]
-    lineconfiguration = [[5,1],[7,3],[8,9],[6,2],[4,10]]
+        global pointnumber = parse(Int,readline(f))
+        while ! eof(f)  
+            sstring = split(readline(f), ": ")
+            keystring = split(sstring[1], "; ")
+            key = (parse(Int,keystring[1][2]), (parse(Int,keystring[1][5])), (parse(Int,keystring[1][8])))
+            weight = parse(Float64,keystring[2])
+            helperDict[(key, weight)] = [parse(Int,entry) for entry in split(sstring[2][2:end-1], ", ")]
+         end
+        close(f)
+    catch
+        throw(error("No Data recorded!"))
+    end
+    for key in keys(helperDict)
+        if key[1] in keys(ourmodel)
+            ourmodel[key[1]][key[2]] = helperDict[key]
+        else
+            ourmodel[key[1]] = Dict(key[2]=>helperDict[key])
+        end
+    end
 
+    global maxval, minval = maximum(vcat([vcat(values(ourmodel[key])...) for key in keys(ourmodel)]...)), minimum(vcat([vcat(values(ourmodel[key])...) for key in keys(ourmodel)]...))
+
+    for key in keys(ourmodel)
+        heatMatrix = Matrix{Float64}(undef,maximum(length.(values(ourmodel[key]))),maximum(length.(values(ourmodel[key])))); 
+        heatMatrix .= NaN
+        display(length.(values(ourmodel[key])))
+        global row = 1
+        for weight in sort(collect(keys(ourmodel[key])))
+            heatMatrix[row,maximum(length.(values(ourmodel[key])))-length(ourmodel[key][weight])+1:maximum(length.(values(ourmodel[key])))] = ourmodel[key][weight] ./ pointnumber
+            row += 1
+        end
+        heatMatrix .= heatMatrix[:, end:-1:1]
+
+        fig = Figure(size=(1000,1000), fontsize=24)
+        ax=Axis(fig[1,1])
+        hm = heatmap!(ax, heatMatrix; colormap=:viridis)#, colorrange=(minval/pointnumber, maxval/pointnumber))
+        hidespines!(ax)
+        hidedecorations!(ax)
+        xlims!(ax, (-0.01,18))
+        ylims!(ax, (-0.25,18.25))
+        text!(ax, [0.3,0.25,17.3], [-0.2,17.6,-0.2]; text=[L"10", L"15", L"4"], fontsize=30)
+        Colorbar(fig[:, end+1], hm; size=30)
+        save("../images/discretizedHeatmap$(key[1]),$(key[2]),$(key[3]).png",fig)
+        pointarray = []
+        for weight in keys(ourmodel[key])
+            for i in 1:length(ourmodel[key][weight])
+                push!(pointarray, [weight, (i-1)/(maximum(length.(values(ourmodel[key])))-1), ourmodel[key][weight][i] / pointnumber])
+            end
+        end
+        println(key)
+        println(pointarray)
+    end
+end
+
+function runTest_twoBestCovers(; boxsize=1, numberOfSamplingRuns=500, prefix="TWOBEST", suffix="4,10,15", discretization=16)
     @var K[1:4] κ[1:12]
 
     #We choose colors with maximum distinguishability
@@ -722,12 +865,24 @@ function runTest_twoBestCovers(; boxsize=100, numberOfSamplingRuns=500, prefix="
                     K[2]^2*K[4]*κ[3]^2*κ[9]*aη, K[2]^2*K[3]*κ[3]^2*κ[12]*aη, K[1]*K[2]*K[3]*κ[3]*κ[6]*κ[12]*aη, K[1]^2*K[3]^2*κ[6]^3*κ[12]^2, 
                     2*K[1]*K[2]*K[3]*K[4]*κ[3]^2*κ[6]*κ[9]*κ[12], 2*K[1]^2*K[2]*K[3]*κ[3]*κ[6]^2*κ[12]^2]
     mcoef = K[1]*K[2]*K[3]*κ[3]*κ[6]*κ[12]*bη
-    configurations = [[[1,3,6],[2,5,7],[8,9],[4,10]]#=, [[3,5,8],[1,4,7],[9,10],[2,6]]=#, [[1,5],[3,7],[8,9],[2,6],[4,10]]]
+    configurations = [
+    [[1,7,9],[3,5,8],[2,6],[4,10]], [[1,4,7],[3,5,10],[8,9],[2,6]], [[5,1],[3,7],[8,9],[2,6],[4,10]]]
+
     all(t->sort(vcat(t...))==[i for i in 1:10], configurations)||throw(error("Not sorted correctly!"))
     oldθ = createθcircuits(hexPoints, coefficients, [], [[[3,5,8],[1,4,7],[9,10],[2,6]]])[1]
-    θ = createθcircuits_weighted2(hexPoints, coefficients, configurations)
+    θ = createθcircuits_weighted(hexPoints, coefficients, configurations; discretization=discretization)
     #plotAllCovers(hexPoints, triangconfigurations, lineconfigurations)
-    runSamplingComparison_weighted(θ, [κ[3],κ[6],κ[9],κ[12]], K, aη, bη, mcoef, oldθ; boxsize=boxsize, numberOfSamplingRuns=numberOfSamplingRuns, prefix=prefix, suffix=suffix)    
+    runSamplingComparison_weighted(θ, [κ[3],κ[6],κ[9],κ[12]], K, aη, bη, mcoef, oldθ; boxsize=boxsize, numberOfSamplingRuns=numberOfSamplingRuns, prefix=prefix, suffix=suffix, discretization=discretization)    
 end
-runTest_twoBestCovers()
+runTest_twoBestCovers( ; suffix="10,12,15" )
+#TODO Linear Coefficients test (over all regions?)
+
+#TODO How big of a region can we cover if all covers are used??? Does the best performing cover contain any points not covered by any other cover?
+#TODO is there a completely redundant cover?
+
+#TODO Do the weighted cover cover points that are not covered by any other cover?
+
+#TODO different scales for K1,...kappa12,K1,...,K4? Probably not.
+
+#TODO Do the coefficients of the best-performing covers tell us anything that could be generalized?
 end 
