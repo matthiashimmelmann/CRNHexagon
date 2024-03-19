@@ -738,10 +738,11 @@ function createθcircuits_weighted(points, coefficients, configurations; discret
     return θdict
 end
 
-function runSamplingComparison_weighted(θ, κs, Ks, aη, bη, mcoef, θbaseline; discretization, boxsize=100, numberOfSamplingRuns=250, prefix="NEW", suffix="")
+function runSamplingComparison_weighted(θ, θ_weighted, κs, Ks, aη, bη, mcoef, θbaseline; discretization, boxsize=100, numberOfSamplingRuns=250, prefix="NEW", suffix="")
     #If the file exists, we add to the previously run tests. Else, we set everything to 0.
-    θkeys = keys(θ)
+    θkeys = keys(θ_weighted)
     ourmodel = Dict()
+    no_other = Dict()
     try
         f = open("../data/$(prefix)$(suffix)triangstoredsolutions$(boxsize).txt", "r")
 
@@ -752,14 +753,16 @@ function runSamplingComparison_weighted(θ, κs, Ks, aη, bη, mcoef, θbaseline
             key = (parse(Int,keystring[1][2]), (parse(Int,keystring[1][5])), (parse(Int,keystring[1][8])))
             weight = parse(Float64,keystring[2])
             ourmodel[(key, weight)] = [parse(Int,entry) for entry in split(sstring[2][2:end-1], ", ")]
+            no_other[(key, weight)] = [0 for _ in 1:length(ourmodel[(key, weight)])]
          end
         close(f)
     catch
         global pointnumber = 0
         for key in θkeys
-            ijkkeys = keys(θ[key])
+            ijkkeys = keys(θ_weighted[key])
             for weight in ijkkeys
-                ourmodel[(key, weight)] = [0 for _ in 1:length(θ[key][weight])]
+                ourmodel[(key, weight)] = [0 for _ in 1:length(θ_weighted[key][weight])]
+                no_other[(key, weight)] = [0 for _ in 1:length(θ_weighted[key][weight])]
             end
         end
     end
@@ -771,23 +774,33 @@ function runSamplingComparison_weighted(θ, κs, Ks, aη, bη, mcoef, θbaseline
         for ind in ProgressBar(1:length(sampling))
             sampler = sampling[ind]
             mval = real(evaluate(mcoef,vcat(Ks,κs)=>sampler))
+            θvals = real.(evaluate.(θ, vcat(Ks,κs)=>sampler))
             for key in θkeys
-                for weight in keys(θ[key])
-                    for j in 1:length(θ[key][weight])
-                        ourval = evaluate(θ[key][weight][j], vcat(Ks,κs)=>sampler)
+                for weight in keys(θ_weighted[key])
+                    for j in 1:length(θ_weighted[key][weight])
+                        ourval = evaluate(θ_weighted[key][weight][j], vcat(Ks,κs)=>sampler)
                         if real(ourval) >= -mval
                             global ourmodel[(key,weight)][j] += 1
+
+                            if all(t-> t<-mval, θvals)
+                                global no_other[(key,weight)][j] += 1
+                            end
                         end
                     end
                 end
             end
+
         end
 
         #SAVE the data to the file `NEWtriangstoredsolutions.txt`
         open("../data/$(prefix)$(suffix)triangstoredsolutions$(boxsize).txt", "w") do file
-            write(file, "$(pointnumber)\n")            
+            write(file, "$(pointnumber)\n")
             for key in keys(ourmodel)
                 write(file, "$(key[1]); $(key[2]): $(ourmodel[key])\n")
+            end
+            write(file, "\n NO OTHER\n")
+            for key in keys(no_other)
+                write(file, "$(key[1]); $(key[2]): $(no_other[key])\n")
             end
         end
     end
@@ -795,14 +808,19 @@ function runSamplingComparison_weighted(θ, κs, Ks, aη, bη, mcoef, θbaseline
     #foreach(j->println("Case $(j): Our model performed better in $(100*round(ourmodel[j]/(ourmodel[j]+prevmodel[j]),5))% of the cases, where the other model did not work. No model found anything in $(100*round(nomodel[j]/pointnumber, 5)) of the cases."), 1:length(θ))
 end
 
-function plotWeightedCovers(; boxsize=10, prefix="TWOBEST", suffix="4,10,15")
+function plotWeightedCovers(; boxsize=1, prefix="TWOBEST", suffix="10,12,15")
     helperDict, ourmodel = Dict(), Dict()
     try
         f = open("../data/$(prefix)$(suffix)triangstoredsolutions$(boxsize).txt", "r")
 
         global pointnumber = parse(Int,readline(f))
         while ! eof(f)  
-            sstring = split(readline(f), ": ")
+            str = readline(f)
+            display(str)
+            if str==""
+                break
+            end
+            sstring = split(str, ": ")
             keystring = split(sstring[1], "; ")
             key = (parse(Int,keystring[1][2]), (parse(Int,keystring[1][5])), (parse(Int,keystring[1][8])))
             weight = parse(Float64,keystring[2])
@@ -833,16 +851,16 @@ function plotWeightedCovers(; boxsize=10, prefix="TWOBEST", suffix="4,10,15")
         end
         heatMatrix .= heatMatrix[:, end:-1:1]
 
-        fig = Figure(size=(1000,1000), fontsize=24)
+        fig = Figure(size=(1200,1000), fontsize=28)
         ax=Axis(fig[1,1])
         hm = heatmap!(ax, heatMatrix; colormap=:viridis)#, colorrange=(minval/pointnumber, maxval/pointnumber))
         hidespines!(ax)
         hidedecorations!(ax)
         xlims!(ax, (-0.01,18))
         ylims!(ax, (-0.25,18.25))
-        text!(ax, [0.3,0.25,17.3], [-0.2,17.6,-0.2]; text=[L"10", L"15", L"4"], fontsize=30)
+        text!(ax, [0.2,0.2,17.3], [-0.25,17.55,-0.25]; text=[L"10", L"15", L"4"], fontsize=35)
         Colorbar(fig[:, end+1], hm; size=30)
-        save("../images/discretizedHeatmap$(key[1]),$(key[2]),$(key[3]).png",fig)
+        save("../images/discretizedHeatmap4,10,15.png",fig)
         pointarray = []
         for weight in keys(ourmodel[key])
             for i in 1:length(ourmodel[key][weight])
@@ -865,16 +883,29 @@ function runTest_twoBestCovers(; boxsize=1, numberOfSamplingRuns=500, prefix="TW
                     K[2]^2*K[4]*κ[3]^2*κ[9]*aη, K[2]^2*K[3]*κ[3]^2*κ[12]*aη, K[1]*K[2]*K[3]*κ[3]*κ[6]*κ[12]*aη, K[1]^2*K[3]^2*κ[6]^3*κ[12]^2, 
                     2*K[1]*K[2]*K[3]*K[4]*κ[3]^2*κ[6]*κ[9]*κ[12], 2*K[1]^2*K[2]*K[3]*κ[3]*κ[6]^2*κ[12]^2]
     mcoef = K[1]*K[2]*K[3]*κ[3]*κ[6]*κ[12]*bη
-    configurations = [
-    [[1,7,9],[3,5,8],[2,6],[4,10]], [[1,4,7],[3,5,10],[8,9],[2,6]], [[5,1],[3,7],[8,9],[2,6],[4,10]]]
+    configurations = [[[1,7,9],[3,5,8],[2,6],[4,10]], [[1,4,7],[3,5,10],[8,9],[2,6]], [[1,5],[3,7],[8,9],[2,6],[4,10]]]
+
+    triangconfigurations = [[[2,7,9],[3,6,10],[1,5],[4,8]], [[3,6,10],[2,4,7],[1,5],[8,9]], [[1,3,6],[2,5,7],[9,10],[4,8]],
+    [[1,3,6],[2,5,7],[8,9],[4,10]], [[3,6,8],[2,7,9],[4,10],[1,5]], [[2,4,7],[3,6,8],[1,5],[9,10]],
+    [[1,4,6],[2,5,8],[3,7],[9,10]], [[1,7,9],[3,5,10],[2,6],[4,8]], [[3,5,8],[1,4,7],[9,10],[2,6]],
+    [[1,7,9],[3,5,8],[2,6],[4,10]], [[1,6,9],[2,5,8],[3,7],[4,10]], [[1,4,7],[3,5,10],[8,9],[2,6]],
+    [[2,5,10],[1,4,6],[3,7],[8,9]], [[1,6,9],[2,5,10],[3,7],[4,8]]]
+    #Check if all covers are legit
+    for config in triangconfigurations
+        all(t->t in union(config[1],config[2],config[3],config[4]),1:10) || display(config)&&throw(error("The triangles don't cover the entire region"))
+        isempty(intersect(config[1],config[2])) && isempty(intersect(config[1],config[3])) && isempty(intersect(config[1],config[4])) && isempty(intersect(config[2],config[3])) && isempty(intersect(config[2],config[4])) && isempty(intersect(config[3],config[4])) || display(config)&&throw(error("Each vertex should only be used once"))
+    end
+
+    lineconfigurations = [[[5,1],[7,3],[8,9],[6,2],[4,10]], [[5,1],[7,3],[9,10],[6,2],[8,4]]]
 
     all(t->sort(vcat(t...))==[i for i in 1:10], configurations)||throw(error("Not sorted correctly!"))
     oldθ = createθcircuits(hexPoints, coefficients, [], [[[3,5,8],[1,4,7],[9,10],[2,6]]])[1]
-    θ = createθcircuits_weighted(hexPoints, coefficients, configurations; discretization=discretization)
+    θ = createθcircuits(hexPoints, coefficients, lineconfigurations, triangconfigurations)
+    θ_weighted = createθcircuits_weighted(hexPoints, coefficients, configurations; discretization=discretization)
     #plotAllCovers(hexPoints, triangconfigurations, lineconfigurations)
-    runSamplingComparison_weighted(θ, [κ[3],κ[6],κ[9],κ[12]], K, aη, bη, mcoef, oldθ; boxsize=boxsize, numberOfSamplingRuns=numberOfSamplingRuns, prefix=prefix, suffix=suffix, discretization=discretization)    
+    runSamplingComparison_weighted(θ, θ_weighted, [κ[3],κ[6],κ[9],κ[12]], K, aη, bη, mcoef, oldθ; boxsize=boxsize, numberOfSamplingRuns=numberOfSamplingRuns, prefix=prefix, suffix=suffix, discretization=discretization)    
 end
-runTest_twoBestCovers( ; suffix="10,12,15" )
+plotWeightedCovers(; boxsize=10, suffix="4,10,15")
 #TODO Linear Coefficients test (over all regions?)
 
 #TODO How big of a region can we cover if all covers are used??? Does the best performing cover contain any points not covered by any other cover?
