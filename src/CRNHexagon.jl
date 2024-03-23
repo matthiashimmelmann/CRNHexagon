@@ -276,8 +276,8 @@ function runSamplingComparison(θ, κs, Ks, aη, bη, mcoef, θbaseline; boxsize
         f = open("../data/$(prefix)$(suffix)triangstoredsolutions$(boxsize).txt", "r")
 
         global pointnumber = parse(Int,readline(f))
-        #global allmodels = parse(Int,readline(f))
-        #global onlyonemodel = [parse(Int,entry) for entry in split(readline(f)[2:end-1], ", ")]
+        global allmodels = parse(Int,readline(f))
+        global onlyonemodel = [parse(Int,entry) for entry in split(readline(f)[2:end-1], ", ")]
         global newmodel = [parse(Int,entry) for entry in split(readline(f)[2:end-1], ", ")]
         global ourmodel = [parse(Int,entry) for entry in split(readline(f)[2:end-1], ", ")]
         global prevmodel = [parse(Int,entry) for entry in split(readline(f)[2:end-1], ", ")]
@@ -302,7 +302,7 @@ function runSamplingComparison(θ, κs, Ks, aη, bη, mcoef, θbaseline; boxsize
 
         for i in 1:length(θ), j in 1:length(θ)
             if i!=j
-                #relDict[(i,j)] = 0
+                relDict[(i,j)] = 0
             end
         end
     end
@@ -328,7 +328,7 @@ function runSamplingComparison(θ, κs, Ks, aη, bη, mcoef, θbaseline; boxsize
                     global nomodel[j] += 1
                 end
             end
-            #=
+            
             indicator, winnerarray = false, []
             for i in 1:length(θ), j in i+1:length(θ)
                 val1 = evaluate(θ[i], vcat(Ks,κs)=>sampler)
@@ -349,21 +349,20 @@ function runSamplingComparison(θ, κs, Ks, aη, bη, mcoef, θbaseline; boxsize
                 onlyonemodel[winnerarray[1]]+=1
             end
             global allmodels += indicator ? 1 : 0 
-            =#
         end
 
         #SAVE the data to the file `NEWtriangstoredsolutions.txt`
         open("../data/$(prefix)$(suffix)triangstoredsolutions$(boxsize).txt", "w") do file
             write(file, "$(pointnumber)\n")
-            #write(file, "$(allmodels)\n")
-            #write(file, "$(onlyonemodel)\n")
+            write(file, "$(allmodels)\n")
+            write(file, "$(onlyonemodel)\n")
             write(file, "$(newmodel)\n")
             write(file, "$(ourmodel)\n")
             write(file, "$(prevmodel)\n")
             write(file, "$(nomodel)\n")
-            #=for key in keys(relDict)
+            for key in keys(relDict)
                 write(file, "$(key[1]), $(key[2]): $(relDict[key])\n")
-            end=#
+            end
         end
     end
 
@@ -905,7 +904,7 @@ function runTest_twoBestCovers(; boxsize=1, numberOfSamplingRuns=500, prefix="TW
     #plotAllCovers(hexPoints, triangconfigurations, lineconfigurations)
     runSamplingComparison_weighted(θ, θ_weighted, [κ[3],κ[6],κ[9],κ[12]], K, aη, bη, mcoef, oldθ; boxsize=boxsize, numberOfSamplingRuns=numberOfSamplingRuns, prefix=prefix, suffix=suffix, discretization=discretization)    
 end
-plotWeightedCovers(; boxsize=10, suffix="4,10,15")
+plotWeightedCovers()
 #TODO Linear Coefficients test (over all regions?)
 
 #TODO How big of a region can we cover if all covers are used??? Does the best performing cover contain any points not covered by any other cover?
