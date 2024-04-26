@@ -263,7 +263,7 @@ function plottriangle()
 end
 
 #=
-Sample randomly from the region [0,boxsize]^n. Whenever aη>=0 and bη<0, the sample is accepted. 
+Sample randomly from the region [0,boxsize]^n. Whenever aη>0 and bη<0, the sample is accepted. 
 We compare all samples to the baseline given by `θbaseline`. Whenever the new model recognizes
 nonnegativity, while the baseline model does not, we add 1 to `ourmodel` and if the opposite is
 true, we add 1 to `prevmodel`. If neither model recognizes nonnegativity, we add 1 to `nomodel`.
@@ -310,7 +310,7 @@ function runSamplingComparison(θ, κs, Ks, aη, bη, mcoef, θbaseline; boxsize
 
     for sampleindex in 1:numberOfSamplingRuns
         display("Run: $(sampleindex)")
-        global sampling = filter(sampler -> !any(t->isapprox(t,0), sampler) && evaluate(aη,vcat(Ks,κs)=>sampler)>=0 && evaluate(bη,vcat(Ks,κs)=>sampler)<0, [boxsize * abs.(rand(Float64,length(vcat(Ks,κs)))) for _ in 1:1000000])
+        global sampling = filter(sampler -> !any(t->isapprox(t,0), sampler) && evaluate(aη,vcat(Ks,κs)=>sampler)>0 && evaluate(bη,vcat(Ks,κs)=>sampler)<0, [boxsize * abs.(rand(Float64,length(vcat(Ks,κs)))) for _ in 1:1000000])
         global pointnumber = pointnumber+length(sampling)
         @showprogress for ind in 1:length(sampling)
             sampler = sampling[ind]
@@ -613,7 +613,7 @@ function empiricalComparisonOfTwoCovers(θsuggestion, θbaseline, K, κ, aη, b�
     vector_no_wins = []
     for sampleindex in 1:numberOfSamplingRuns
         display("Run: $(sampleindex)")
-        global sampling = filter(sampler -> !any(t->isapprox(t,0), sampler) && evaluate(aη,vcat(K,[κ[3],κ[6],κ[9],κ[12]])=>sampler)>=0 && evaluate(bη,vcat(K,[κ[3],κ[6],κ[9],κ[12]])=>sampler)<0, [boxsizes .* abs.(rand(Float64,8)) for _ in 1:1000000])
+        global sampling = filter(sampler -> !any(t->isapprox(t,0), sampler) && evaluate(aη,vcat(K,[κ[3],κ[6],κ[9],κ[12]])=>sampler)>0 && evaluate(bη,vcat(K,[κ[3],κ[6],κ[9],κ[12]])=>sampler)<0, [boxsizes .* abs.(rand(Float64,8)) for _ in 1:1000000])
         @showprogress for ind in 1:length(sampling)
             sampler = sampling[ind]
             mval = evaluate(mcoef,vcat(K,[κ[3],κ[6],κ[9],κ[12]])=>sampler)
@@ -771,7 +771,7 @@ function runSamplingComparison_weighted(θ, θ_weighted, κs, Ks, aη, bη, mcoe
 
     for sampleindex in 1:numberOfSamplingRuns
         display("Run: $(sampleindex)")
-        global sampling = filter(sampler -> !any(t->isapprox(t,0), sampler) && evaluate(aη,vcat(Ks,κs)=>sampler)>=0 && evaluate(bη,vcat(Ks,κs)=>sampler)<0, [boxsize * abs.(rand(Float64,length(vcat(Ks,κs)))) for _ in 1:1000000])
+        global sampling = filter(sampler -> !any(t->isapprox(t,0), sampler) && evaluate(aη,vcat(Ks,κs)=>sampler)>0 && evaluate(bη,vcat(Ks,κs)=>sampler)<0, [boxsize * abs.(rand(Float64,length(vcat(Ks,κs)))) for _ in 1:1000000])
         global pointnumber = pointnumber+length(sampling)
         @showprogress for ind in 1:length(sampling)
             sampler = sampling[ind]
