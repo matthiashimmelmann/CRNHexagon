@@ -3,7 +3,7 @@ module CRNHexagon
 import GLMakie: rotate!, text!, Colorbar, heatmap, heatmap!, xlims!, ylims!, plot!, Point2f0, lines!, Figure, Axis, save, hidespines!, hidedecorations!, mesh!, scatter!, text!, RGBA, RGB, poly!, Axis3, Point3f0
 import HomotopyContinuation: @var, evaluate, Expression
 import LinearAlgebra: inv, det
-import ProgressBars: ProgressBar
+import ProgressMeter: @showprogress
 import Colors: distinguishable_colors, red, green, blue, colormap
 import LaTeXStrings: @L_str
 import Polyhedra: Mesh, polyhedron, convexhull
@@ -306,17 +306,20 @@ function runSamplingComparison(θ, κs, Ks, aη, bη, mcoef, θbaseline; boxsize
             end
         end
     end
+    println(relDict)
 
     for sampleindex in 1:numberOfSamplingRuns
         display("Run: $(sampleindex)")
         global sampling = filter(sampler -> !any(t->isapprox(t,0), sampler) && evaluate(aη,vcat(Ks,κs)=>sampler)>=0 && evaluate(bη,vcat(Ks,κs)=>sampler)<0, [boxsize * abs.(rand(Float64,length(vcat(Ks,κs)))) for _ in 1:1000000])
         global pointnumber = pointnumber+length(sampling)
-        for ind in ProgressBar(1:length(sampling))
+        @showprogress for ind in 1:length(sampling)
             sampler = sampling[ind]
             mval = evaluate(mcoef,vcat(Ks,κs)=>sampler)
             prevval = evaluate(θbaseline, vcat(Ks,κs)=>sampler)
+            θ_eval = []
             for j in 1:length(θ)
                 ourval = evaluate(θ[j], vcat(Ks,κs)=>sampler)
+                push!(θ_eval, ourval)
                 if ourval >= -mval
                     global newmodel[j] += 1
                 end
@@ -331,8 +334,8 @@ function runSamplingComparison(θ, κs, Ks, aη, bη, mcoef, θbaseline; boxsize
             
             indicator, winnerarray = false, []
             for i in 1:length(θ), j in i+1:length(θ)
-                val1 = evaluate(θ[i], vcat(Ks,κs)=>sampler)
-                val2 = evaluate(θ[j], vcat(Ks,κs)=>sampler)
+                val1 = θ_eval[i]
+                val2 = θ_eval[j]
                 if val1 >= -mval && val2 < -mval
                     push!(winnerarray, i)
                     relDict[(i,j)] += 1
@@ -408,7 +411,7 @@ end
 #=
 This is the main method. Use it to run all tests.
 =#
-function runTest( ; boxsize=1000, numberOfSamplingRuns=100, prefix="relTest", suffix="NEW")
+function runTest( ; boxsize=1, numberOfSamplingRuns=100, prefix="relTest", suffix="NEW")
     @var K[1:4] κ[1:12]
 
     #We choose colors with maximum distinguishability
@@ -611,7 +614,7 @@ function empiricalComparisonOfTwoCovers(θsuggestion, θbaseline, K, κ, aη, b�
     for sampleindex in 1:numberOfSamplingRuns
         display("Run: $(sampleindex)")
         global sampling = filter(sampler -> !any(t->isapprox(t,0), sampler) && evaluate(aη,vcat(K,[κ[3],κ[6],κ[9],κ[12]])=>sampler)>=0 && evaluate(bη,vcat(K,[κ[3],κ[6],κ[9],κ[12]])=>sampler)<0, [boxsizes .* abs.(rand(Float64,8)) for _ in 1:1000000])
-        for ind in ProgressBar(1:length(sampling))
+        @showprogress for ind in 1:length(sampling)
             sampler = sampling[ind]
             mval = evaluate(mcoef,vcat(K,[κ[3],κ[6],κ[9],κ[12]])=>sampler)
             prevval = evaluate(θbaseline, vcat(K,[κ[3],κ[6],κ[9],κ[12]])=>sampler)
@@ -770,7 +773,7 @@ function runSamplingComparison_weighted(θ, θ_weighted, κs, Ks, aη, bη, mcoe
         display("Run: $(sampleindex)")
         global sampling = filter(sampler -> !any(t->isapprox(t,0), sampler) && evaluate(aη,vcat(Ks,κs)=>sampler)>=0 && evaluate(bη,vcat(Ks,κs)=>sampler)<0, [boxsize * abs.(rand(Float64,length(vcat(Ks,κs)))) for _ in 1:1000000])
         global pointnumber = pointnumber+length(sampling)
-        for ind in ProgressBar(1:length(sampling))
+        @showprogress for ind in 1:length(sampling)
             sampler = sampling[ind]
             mval = real(evaluate(mcoef,vcat(Ks,κs)=>sampler))
             θvals = real.(evaluate.(θ, vcat(Ks,κs)=>sampler))
@@ -808,11 +811,13 @@ function runSamplingComparison_weighted(θ, θ_weighted, κs, Ks, aη, bη, mcoe
 end
 
 function plotWeightedCovers(; boxsize=1, prefix="TWOBEST", suffix="10,12,15")
-    helperDict, ourmodel = Dict(), Dict()
+    helperDict1, ourmodel1 = Dict(), Dict()
+    helperDict2, ourmodel2 = Dict(), Dict()
     try
-        f = open("../data/$(prefix)$(suffix)triangstoredsolutions$(boxsize).txt", "r")
+        f = open("../data/$(prefix)4,10,15triangstoredsolutions10.txt", "r")
+        g = open("../data/$(prefix)10,12,15triangstoredsolutions1.txt", "r")
 
-        global pointnumber = parse(Int,readline(f))
+        global pointnumber1 = parse(Int,readline(f))
         while ! eof(f)  
             str = readline(f)
             display(str)
@@ -823,52 +828,110 @@ function plotWeightedCovers(; boxsize=1, prefix="TWOBEST", suffix="10,12,15")
             keystring = split(sstring[1], "; ")
             key = (parse(Int,keystring[1][2]), (parse(Int,keystring[1][5])), (parse(Int,keystring[1][8])))
             weight = parse(Float64,keystring[2])
-            helperDict[(key, weight)] = [parse(Int,entry) for entry in split(sstring[2][2:end-1], ", ")]
+            helperDict1[(key, weight)] = [parse(Int,entry) for entry in split(sstring[2][2:end-1], ", ")]
          end
         close(f)
+        global pointnumber2 = parse(Int,readline(g))
+        while ! eof(g)  
+            str = readline(g)
+            display(str)
+            if str==""
+                break
+            end
+            sstring = split(str, ": ")
+            keystring = split(sstring[1], "; ")
+            key = (parse(Int,keystring[1][2]), (parse(Int,keystring[1][5])), (parse(Int,keystring[1][8])))
+            weight = parse(Float64,keystring[2])
+            helperDict2[(key, weight)] = [parse(Int,entry) for entry in split(sstring[2][2:end-1], ", ")]
+         end
+        close(g)
+
     catch
         throw(error("No Data recorded!"))
     end
-    for key in keys(helperDict)
-        if key[1] in keys(ourmodel)
-            ourmodel[key[1]][key[2]] = helperDict[key]
+    for key in keys(helperDict1)
+        if key[1] in keys(ourmodel1)
+            ourmodel1[key[1]][key[2]] = helperDict1[key]
         else
-            ourmodel[key[1]] = Dict(key[2]=>helperDict[key])
+            ourmodel1[key[1]] = Dict(key[2]=>helperDict1[key])
+        end
+    end
+    for key in keys(helperDict2)
+        if key[1] in keys(ourmodel2)
+            ourmodel2[key[1]][key[2]] = helperDict2[key]
+        else
+            ourmodel2[key[1]] = Dict(key[2]=>helperDict2[key])
         end
     end
 
-    global maxval, minval = maximum(vcat([vcat(values(ourmodel[key])...) for key in keys(ourmodel)]...)), minimum(vcat([vcat(values(ourmodel[key])...) for key in keys(ourmodel)]...))
 
-    for key in keys(ourmodel)
-        heatMatrix = Matrix{Float64}(undef,maximum(length.(values(ourmodel[key]))),maximum(length.(values(ourmodel[key])))); 
-        heatMatrix .= NaN
-        display(length.(values(ourmodel[key])))
+    global maxval1, minval1 = maximum(vcat([vcat(values(ourmodel1[key])...) for key in keys(ourmodel1)]...)) / pointnumber1, minimum(vcat([vcat(values(ourmodel1[key])...) for key in keys(ourmodel1)]...)) / pointnumber1
+    global maxval2, minval2 = maximum(vcat([vcat(values(ourmodel2[key])...) for key in keys(ourmodel2)]...)) / pointnumber2, minimum(vcat([vcat(values(ourmodel2[key])...) for key in keys(ourmodel2)]...)) / pointnumber2
+    global maxval, minval = maximum([maxval1, maxval2]), minimum([minval1, minval2])
+    fig = Figure(size=(2100,1000), fontsize=28)
+
+    
+    for key in keys(ourmodel1)
+        ax=Axis(fig[1,1])
+        heatMatrix1 = Matrix{Float64}(undef,maximum(length.(values(ourmodel1[key]))),maximum(length.(values(ourmodel1[key])))); 
+        heatMatrix1 .= NaN
+        display(length.(values(ourmodel1[key])))
         global row = 1
-        for weight in sort(collect(keys(ourmodel[key])))
-            heatMatrix[row,maximum(length.(values(ourmodel[key])))-length(ourmodel[key][weight])+1:maximum(length.(values(ourmodel[key])))] = ourmodel[key][weight] ./ pointnumber
+        for weight in sort(collect(keys(ourmodel1[key])))
+            heatMatrix1[row,maximum(length.(values(ourmodel1[key])))-length(ourmodel1[key][weight])+1:maximum(length.(values(ourmodel1[key])))] = ourmodel1[key][weight] ./ pointnumber1
             row += 1
         end
-        heatMatrix .= heatMatrix[:, end:-1:1]
-
-        fig = Figure(size=(1200,1000), fontsize=28)
-        ax=Axis(fig[1,1])
-        hm = heatmap!(ax, heatMatrix; colormap=:viridis)#, colorrange=(minval/pointnumber, maxval/pointnumber))
+        heatMatrix1 .= heatMatrix1[:, end:-1:1]
+    
+        hm = heatmap!(ax, heatMatrix1; colormap=:viridis, colorrange = (minval1,maxval))#, colorrange=(minval/pointnumber, maxval/pointnumber))
         hidespines!(ax)
         hidedecorations!(ax)
         xlims!(ax, (-0.01,18))
         ylims!(ax, (-0.25,18.25))
         text!(ax, [0.2,0.2,17.3], [-0.25,17.55,-0.25]; text=[L"10", L"15", L"4"], fontsize=35)
-        Colorbar(fig[:, end+1], hm; size=30)
-        save("../images/discretizedHeatmap4,10,15.png",fig)
-        pointarray = []
-        for weight in keys(ourmodel[key])
-            for i in 1:length(ourmodel[key][weight])
-                push!(pointarray, [weight, (i-1)/(maximum(length.(values(ourmodel[key])))-1), ourmodel[key][weight][i] / pointnumber])
+
+
+        pointarray1 = []
+        for weight in keys(ourmodel1[key])
+            for i in 1:length(ourmodel1[key][weight])
+                push!(pointarray1, [weight, (i-1)/(maximum(length.(values(ourmodel1[key])))-1), ourmodel1[key][weight][i] / pointnumber1])
             end
         end
         println(key)
-        println(pointarray)
+        println(pointarray1)
     end
+
+    for key in keys(ourmodel2)
+        ax=Axis(fig[1,2])
+        heatMatrix2 = Matrix{Float64}(undef,maximum(length.(values(ourmodel2[key]))),maximum(length.(values(ourmodel2[key])))); 
+        heatMatrix2 .= NaN
+        display(length.(values(ourmodel2[key])))
+        global row = 1
+        for weight in sort(collect(keys(ourmodel2[key])))
+            heatMatrix2[row,maximum(length.(values(ourmodel2[key])))-length(ourmodel2[key][weight])+1:maximum(length.(values(ourmodel2[key])))] = ourmodel2[key][weight] ./ pointnumber2
+            row += 1
+        end
+        heatMatrix2 .= heatMatrix2[:, end:-1:1]'
+    
+        global hm = heatmap!(ax, heatMatrix2; colormap=:viridis, colorrange = (minval,maxval2))#, colorrange=(minval/pointnumber, maxval/pointnumber))
+        hidespines!(ax)
+        hidedecorations!(ax)
+        xlims!(ax, (-0.01,18))
+        ylims!(ax, (-0.25,18.25))
+        text!(ax, [0.2,0.2,17.3], [-0.25,17.55,-0.25]; text=[L"12", L"15", L"10"], fontsize=35)
+
+        pointarray2 = []
+        for weight in keys(ourmodel2[key])
+            for i in 1:length(ourmodel2[key][weight])
+                push!(pointarray2, [weight, (i-1)/(maximum(length.(values(ourmodel2[key])))-1), ourmodel2[key][weight][i] / pointnumber2])
+            end
+        end
+        println(key)
+        println(pointarray2)
+    end
+    Colorbar(fig[:, end+1], colorrange = (minval,maxval); size=30)
+    save("../images/discretizedHeatmapnew.png",fig)
+
 end
 
 function runTest_twoBestCovers(; boxsize=1, numberOfSamplingRuns=500, prefix="TWOBEST", suffix="4,10,15", discretization=16)
@@ -904,7 +967,10 @@ function runTest_twoBestCovers(; boxsize=1, numberOfSamplingRuns=500, prefix="TW
     #plotAllCovers(hexPoints, triangconfigurations, lineconfigurations)
     runSamplingComparison_weighted(θ, θ_weighted, [κ[3],κ[6],κ[9],κ[12]], K, aη, bη, mcoef, oldθ; boxsize=boxsize, numberOfSamplingRuns=numberOfSamplingRuns, prefix=prefix, suffix=suffix, discretization=discretization)    
 end
-plotWeightedCovers()
+
+for i in [10,100,1000]
+    i == 10 ? runTest( ; boxsize=i, numberOfSamplingRuns=200) : runTest( ; boxsize=i, numberOfSamplingRuns=100)
+end
 #TODO Linear Coefficients test (over all regions?)
 
 #TODO How big of a region can we cover if all covers are used??? Does the best performing cover contain any points not covered by any other cover?

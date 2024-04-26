@@ -2,7 +2,7 @@
 
 julia_version = "1.9.4"
 manifest_format = "2.0"
-project_hash = "96ff469f6ae765f128b89cd9488a7e54ffec229e"
+project_hash = "f40625a7181f31402ed00cf377e1e625a83d2b24"
 
 [[deps.AbstractFFTs]]
 deps = ["LinearAlgebra"]
@@ -1330,9 +1330,9 @@ version = "1.5.1"
 
 [[deps.ProgressMeter]]
 deps = ["Distributed", "Printf"]
-git-tree-sha1 = "00099623ffee15972c16111bcf84c58a0051257c"
+git-tree-sha1 = "763a8ceb07833dd51bb9e3bbca372de32c0605ad"
 uuid = "92933f4c-e287-5a05-a399-4b506db050ca"
-version = "1.9.0"
+version = "1.10.0"
 
 [[deps.ProjectiveVectors]]
 deps = ["LinearAlgebra", "StaticArrays"]
