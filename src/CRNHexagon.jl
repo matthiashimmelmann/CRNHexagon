@@ -529,7 +529,7 @@ end
 
 This is the main method. Use it to run all tests.
 =#
-function runTest( ; boxsize=1, numberOfSamplingRuns=330, prefix="michaelismentistest", suffix="NEW")
+function runTest( ; boxsize=1, numberOfSamplingRuns=330, prefix="michaelismentontest", suffix="NEW")
     @var κ[1:12]
 
     #We choose colors with maximum distinguishability
