@@ -529,12 +529,12 @@ end
 
 This is the main method. Use it to run all tests.
 =#
-function runTest( ; boxsize=1, numberOfSamplingRuns=100, prefix="michaelismentistest", suffix="NEW")
+function runTest( ; boxsize=1, numberOfSamplingRuns=330, prefix="michaelismentistest", suffix="NEW")
     @var κ[1:12]
 
     #We choose colors with maximum distinguishability
     hexPoints = [(0,0),(1,0),(2,0),(4,1),(4,2),(3,2),(2,2),(0,1),(3,1),(1,1)]
-    K = [(κ[2]+κ[3])/κ[1], (κ[5]+κ[6])/κ[4], (κ[8]+κ[9])/κ[7], (κ[12]+κ[12])/κ[10]]
+    K = [(κ[2]+κ[3])/κ[1], (κ[5]+κ[6])/κ[4], (κ[8]+κ[9])/κ[7], (κ[11]+κ[12])/κ[10]]
     aη = κ[3]*κ[12] - κ[6]*κ[9]
     bη = (K[2] + K[3])*κ[3]*κ[12] - (K[1]+K[4])*κ[6]*κ[9]
     coefficients = [K[1]^3*K[3]^2*κ[6]^3*κ[12]^2, K[1]^2*K[2]*K[3]^2*κ[3]*κ[6]^2*κ[12]^2, K[1]^2*K[2]*K[3]*K[4]*κ[3]*κ[6]^2*κ[9]*κ[12], K[1]*K[2]^2*K[4]*κ[3]^2*κ[6]*κ[9]^2,
@@ -620,7 +620,6 @@ function computeCoverInvariants( ; startboxsize=1, finalboxsize=1000, prefix="NE
     end
 
     #print Latex table code
-    #=
     for θ in 1:Int(length(ourmodeldots)/2)
         print("~&+&")
         for i in 1:length(ourmodeldots[θ])
@@ -638,7 +637,7 @@ function computeCoverInvariants( ; startboxsize=1, finalboxsize=1000, prefix="NE
         end
         print("0&~\\\\[.3mm] \\thickhline \n\n")
     end
-    =#
+    
     print("~&+&-&0&+&-&0&+&-&0\\\\ \\thickhline \n\n")
     for θ in 1:Int(length(ourmodeldots))
         print("$(θ)")
@@ -670,6 +669,7 @@ function compareTwoCovers(cover_suggested::Int, cover_baseline::Int; numberOfSam
 
     #We choose colors with maximum distinguishability
     hexPoints = [(0,0),(1,0),(2,0),(4,1),(4,2),(3,2),(2,2),(0,1),(3,1),(1,1)]
+    K = [(κ[2]+κ[3])/κ[1], (κ[5]+κ[6])/κ[4], (κ[8]+κ[9])/κ[7], (κ[11]+κ[12])/κ[10]]
     aη = κ[3]*κ[12] - κ[6]*κ[9]
     bη = (K[2] + K[3])*κ[3]*κ[12] - (K[1]+K[4])*κ[6]*κ[9]
     coefficients = [K[1]^3*K[3]^2*κ[6]^3*κ[12]^2, K[1]^2*K[2]*K[3]^2*κ[3]*κ[6]^2*κ[12]^2, K[1]^2*K[2]*K[3]*K[4]*κ[3]*κ[6]^2*κ[9]*κ[12], K[1]*K[2]^2*K[4]*κ[3]^2*κ[6]*κ[9]^2,
@@ -1082,7 +1082,7 @@ function runTest_twoBestCovers(; boxsize=1, numberOfSamplingRuns=100, prefix="li
 
     #We choose colors with maximum distinguishability
     hexPoints = [(0,0),(1,0),(2,0),(4,1),(4,2),(3,2),(2,2),(0,1),(3,1),(1,1)]
-    K = [(κ[2]+κ[3])/κ[1], (κ[5]+κ[6])/κ[4], (κ[8]+κ[9])/κ[7], (κ[12]+κ[12])/κ[10]]
+    K = [(κ[2]+κ[3])/κ[1], (κ[5]+κ[6])/κ[4], (κ[8]+κ[9])/κ[7], (κ[11]+κ[12])/κ[10]]
     aη = κ[3]*κ[12] - κ[6]*κ[9]
     bη = (K[2] + K[3])*κ[3]*κ[12] - (K[1]+K[4])*κ[6]*κ[9]
     coefficients = [K[1]^3*K[3]^2*κ[6]^3*κ[12]^2, K[1]^2*K[2]*K[3]^2*κ[3]*κ[6]^2*κ[12]^2, K[1]^2*K[2]*K[3]*K[4]*κ[3]*κ[6]^2*κ[9]*κ[12], K[1]*K[2]^2*K[4]*κ[3]^2*κ[6]*κ[9]^2,
