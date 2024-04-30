@@ -45,7 +45,7 @@ function createθcircuits(points, coefficients, lineconfigurations, triangconfig
                 global λ4 = inv(barycenterline)*[2,1];
                 global λ4 = collect(λ4 / sum(λ4))
             end
-
+            display([λ1,λ2,λ3,λ4])
             global θ1 = prod([(coefficients[config[1][i]]/λ1[i])^(λ1[i]) for i in 1:length(config[1])])
             global θ2 = prod([(coefficients[config[2][i]]/λ2[i])^(λ2[i]) for i in 1:length(config[2])])
             global θ3 = prod([(coefficients[config[3][i]]/λ3[i])^(λ3[i]) for i in 1:length(config[3])])
@@ -111,6 +111,123 @@ function createθcircuits(points, coefficients, lineconfigurations, triangconfig
     end
 
     return θ
+end
+
+
+function plot_intermediate_covers(points, conf1, conf2)
+    fourcolors = map(col -> (red(col), green(col), blue(col)), distinguishable_colors(3, [RGB(1,1,1), RGB(0,0,0)], dropseed=true, lchoices = range(25, stop=50, length=15), hchoices = range(120, stop=350, length=20)))
+    fivecolors = map(col -> (red(col), green(col), blue(col)), distinguishable_colors(5, [RGB(1,1,1), RGB(0,0,0)], dropseed=true, lchoices = range(25, stop=60, length=20), hchoices = range(120, stop=330, length=30)))
+
+    pointsForPlot = [(0,0),(1,0),(2,0),(4,1),(4,2),(3,2),(2,2),(0,1),(0,0)]
+    for t in 0.0:1/3:1.0
+        fig = Figure(size=(1200,1200))
+        ax = Axis(fig[1,1], aspect=1)
+        hidespines!(ax)
+        hidedecorations!(ax)
+        poly!(ax,[Point2f0(pt) for pt in pointsForPlot]; color=RGBA{Float64}(0.1, 0.1, 0.1, 0.04),strokewidth=0)
+        if t < 0.5
+            poly!(ax,[Point2f0(points[pt]) for pt in conf2[1]]; color=RGBA{Float64}(fourcolors[1][1], fourcolors[1][2], fourcolors[1][3], t==0 ? 0.15 : 0.075),strokewidth=0)
+        else
+            poly!(ax,[Point2f0(points[pt]) for pt in conf1[1]]; color=RGBA{Float64}(fourcolors[1][1], fourcolors[1][2], fourcolors[1][3], t==1 ? 0.15 : 0.075),strokewidth=0)
+        end
+        lines!(ax,[Point2f0(points[pt]) for pt in vcat(conf1[1],conf1[1][1])], color=RGBA{Float64}(fourcolors[1][1], fourcolors[1][2], fourcolors[1][3], t), linewidth=5)
+        lines!(ax,[Point2f0(points[pt]) for pt in vcat(conf2[1],conf2[1][1])], color=RGBA{Float64}(fourcolors[1][1], fourcolors[1][2], fourcolors[1][3], 1-t), linewidth=5)
+        if t < 0.5
+            poly!(ax,[Point2f0(points[pt]) for pt in conf2[2]]; color=RGBA{Float64}(fourcolors[2][1], fourcolors[2][2], fourcolors[2][3], t==0 ? 0.15 : 0.075),strokewidth=0)
+        else
+            poly!(ax,[Point2f0(points[pt]) for pt in conf1[2]]; color=RGBA{Float64}(fourcolors[2][1], fourcolors[2][2], fourcolors[2][3],  t==1 ? 0.15 : 0.075),strokewidth=0)
+        end
+        lines!(ax,[Point2f0(points[pt]) for pt in vcat(conf1[2],conf1[2][1])], color=RGBA{Float64}(fourcolors[2][1], fourcolors[2][2], fourcolors[2][3], t), linewidth=5)
+        lines!(ax,[Point2f0(points[pt]) for pt in vcat(conf2[2],conf2[2][1])], color=RGBA{Float64}(fourcolors[2][1], fourcolors[2][2], fourcolors[2][3], 1-t), linewidth=5)
+        lines!(ax,[Point2f0(pt) for pt in pointsForPlot], color=:black, linewidth=10)
+
+        lw = 15
+        if (conf1[3]==[9,10]||conf1[3]==[4,8]||conf1[3]==[10,9]||conf1[3]==[8,4])&&(conf1[4]==[9,10]||conf1[4]==[4,8]||conf1[4]==[10,9]||conf1[4]==[8,4])
+            lines!(ax,[Point2f0(points[pt]) for pt in [9,10]], color=RGBA{Float64}(0.35, 0.35, 0.35, t), linewidth=lw)
+            xvals=0:0.1:4
+            yvals = [1 + 0.0123563*x - 0.630187*x^2 + 0.622464*x^3 - 0.194037*x^4 + 0.0194037*x^5 + 3.66123*10^-17*x^6 for x in xvals]
+            lines!(ax,[Point2f0([xvals[i],yvals[i]]) for i in 1:length(yvals)], color=RGBA{Float64}(fourcolors[3][1], fourcolors[3][2], fourcolors[3][3], t), linewidth=lw)
+        elseif (conf1[3]==[8,9]||conf1[3]==[4,10]||conf1[3]==[9,8]||conf1[3]==[10,4])&&(conf1[4]==[8,9]||conf1[4]==[4,10]||conf1[4]==[9,8]||conf1[4]==[10,4])
+            xvals1=0:0.1:3
+            xvals2=1:0.1:4
+            yvals1=[1 + 0.00765306 *x - 0.389031 *x^2 + 0.320153 *x^3 - 0.0637755 *x^4 for x in xvals1]
+            yvals2=yvals1[end:-1:1]
+            lines!(ax,[Point2f0([xvals1[i],yvals1[i]]) for i in 1:length(yvals1)], color=RGBA{Float64}(fourcolors[3][1], fourcolors[3][2], fourcolors[3][3], t), linewidth=lw)
+            lines!(ax,[Point2f0([xvals2[i],yvals2[i]]) for i in 1:length(yvals2)], color=RGBA{Float64}(0.35, 0.35, 0.35, t), linewidth=lw)
+        elseif conf1[3]==[8,9]||conf1[3]==[9,8]||conf1[4]==[8,9]||conf1[4]==[9,8]
+            xvals1=0:0.1:3
+            yvals1=[1 + 0.00765306 *x - 0.389031 *x^2 + 0.320153 *x^3 - 0.0637755 *x^4 for x in xvals1]
+            lines!(ax,[Point2f0([xvals1[i],yvals1[i]]) for i in 1:length(yvals1)], color=RGBA{Float64}(fourcolors[3][1], fourcolors[3][2], fourcolors[3][3], t), linewidth=lw)
+            twoconfig = conf1[3]==[8,9]||conf1[3]==[9,8] ? conf1[4] : conf1[3]
+            lines!(ax,[Point2f0(points[pt]) for pt in twoconfig], color=RGBA{Float64}(0.35, 0.35, 0.35, t), linewidth=lw)
+        elseif conf1[3]==[4,10]||conf1[3]==[10,4]||conf1[4]==[4,10]||conf1[4]==[10,4]
+            xvals1=0:0.1:3
+            xvals2=1:0.1:4
+            yvals2=([1 + 0.00765306 *x - 0.389031 *x^2 + 0.320153 *x^3 - 0.0637755 *x^4 for x in xvals1])[end:-1:1]
+            lines!(ax,[Point2f0([xvals2[i],yvals2[i]]) for i in 1:length(yvals2)], color=RGBA{Float64}(0.35, 0.35, 0.35, t), linewidth=lw)
+            twoconfig = conf1[3]==[4,10]||conf1[3]==[10,4] ? conf1[4] : conf1[3]
+            lines!(ax,[Point2f0(points[pt]) for pt in twoconfig], color=RGBA{Float64}(fourcolors[3][1], fourcolors[3][2], fourcolors[3][3], t), linewidth=lw)
+        elseif (conf1[3]==[4,8]||conf1[3]==[8,4]||conf1[4]==[4,8]||conf1[3]==[8,4])
+            xvals=0:0.1:4
+            yvals = [1 + 0.0123563*x - 0.630187*x^2 + 0.622464*x^3 - 0.194037*x^4 + 0.0194037*x^5 + 3.66123*10^-17*x^6 for x in xvals]
+            lines!(ax,[Point2f0([xvals[i],yvals[i]]) for i in 1:length(yvals)], color=RGBA{Float64}(fourcolors[3][1], fourcolors[3][2], fourcolors[3][3], t), linewidth=lw)
+            twoconfig = conf1[3]==[4,8]||conf1[3]==[8,4] ? conf1[4] : conf1[3]
+            lines!(ax,[Point2f0(points[pt]) for pt in twoconfig], color=RGBA{Float64}(0.35, 0.35, 0.35, t), linewidth=lw)
+        elseif (conf1[3]==[9,10]||conf1[3]==[9,10]||conf1[4]==[9,10]||conf1[3]==[9,10])
+            lines!(ax,[Point2f0(points[pt]) for pt in [9,10]], color=RGBA{Float64}(0.35, 0.35, 0.35, t), linewidth=lw)
+            twoconfig = conf1[3]==[9,10]||conf1[3]==[10,9] ? conf1[4] : conf1[3]
+            lines!(ax,[Point2f0(points[pt]) for pt in twoconfig], color=RGBA{Float64}(fourcolors[3][1], fourcolors[3][2], fourcolors[3][3], t), linewidth=lw)
+        else
+            lines!(ax,[GPoint2f0(points[pt]) for pt in conf1[3]], color=RGBA{Float64}(fourcolors[3][1], fourcolors[3][2], fourcolors[3][3], t), linewidth=lw)
+            lines!(ax,[Point2f0(points[pt]) for pt in conf1[4]], color=RGBA{Float64}(0.35, 0.35, 0.35, t), linewidth=lw)
+        end
+
+
+        if (conf2[3]==[9,10]||conf2[3]==[4,8]||conf2[3]==[10,9]||conf2[3]==[8,4])&&(conf2[4]==[9,10]||conf2[4]==[4,8]||conf2[4]==[10,9]||conf2[4]==[8,4])
+            lines!(ax,[Point2f0(points[pt]) for pt in [9,10]], color=RGBA{Float64}(0.35, 0.35, 0.35, 1-t), linewidth=lw)
+            xvals=0:0.1:4
+            yvals = [1 + 0.0123563*x - 0.630187*x^2 + 0.622464*x^3 - 0.194037*x^4 + 0.0194037*x^5 + 3.66123*10^-17*x^6 for x in xvals]
+            lines!(ax,[Point2f0([xvals[i],yvals[i]]) for i in 1:length(yvals)], color=RGBA{Float64}(fourcolors[3][1], fourcolors[3][2], fourcolors[3][3], 1-t), linewidth=lw)
+        elseif (conf2[3]==[8,9]||conf2[3]==[4,10]||conf2[3]==[9,8]||conf2[3]==[10,4])&&(conf2[4]==[8,9]||conf2[4]==[4,10]||conf2[4]==[9,8]||conf2[4]==[10,4])
+            xvals1=0:0.1:3
+            xvals2=1:0.1:4
+            yvals1=[1 + 0.00765306 *x - 0.389031 *x^2 + 0.320153 *x^3 - 0.0637755 *x^4 for x in xvals1]
+            yvals2=yvals1[end:-1:1]
+            lines!(ax,[Point2f0([xvals1[i],yvals1[i]]) for i in 1:length(yvals1)], color=RGBA{Float64}(fourcolors[3][1], fourcolors[3][2], fourcolors[3][3], 1-t), linewidth=lw)
+            lines!(ax,[Point2f0([xvals2[i],yvals2[i]]) for i in 1:length(yvals2)], color=RGBA{Float64}(0.35, 0.35, 0.35, 1-t), linewidth=lw)
+        elseif conf2[3]==[8,9]||conf2[3]==[9,8]||conf2[4]==[8,9]||conf2[4]==[9,8]
+            xvals1=0:0.1:3
+            yvals1=[1 + 0.00765306 *x - 0.389031 *x^2 + 0.320153 *x^3 - 0.0637755 *x^4 for x in xvals1]
+            lines!(ax,[Point2f0([xvals1[i],yvals1[i]]) for i in 1:length(yvals1)], color=RGBA{Float64}(fourcolors[3][1], fourcolors[3][2], fourcolors[3][3], 1-t), linewidth=lw)
+            twoconfig = conf2[3]==[8,9]||conf2[3]==[9,8] ? conf2[4] : conf2[3]
+            lines!(ax,[Point2f0(points[pt]) for pt in twoconfig], color=RGBA{Float64}(0.35, 0.35, 0.35, 1-t), linewidth=lw)
+        elseif conf2[3]==[4,10]||conf2[3]==[10,4]||conf2[4]==[4,10]||conf2[4]==[10,4]
+            xvals1=0:0.1:3
+            xvals2=1:0.1:4
+            yvals2=([1 + 0.00765306 *x - 0.389031 *x^2 + 0.320153 *x^3 - 0.0637755 *x^4 for x in xvals1])[end:-1:1]
+            lines!(ax,[Point2f0([xvals2[i],yvals2[i]]) for i in 1:length(yvals2)], color=RGBA{Float64}(0.35, 0.35, 0.35, 1-t), linewidth=lw)
+            twoconfig = conf2[3]==[4,10]||conf2[3]==[10,4] ? conf2[4] : conf2[3]
+            lines!(ax,[Point2f0(points[pt]) for pt in twoconfig], color=RGBA{Float64}(fourcolors[3][1], fourcolors[3][2], fourcolors[3][3], 1-t), linewidth=lw)
+        elseif (conf2[3]==[4,8]||conf2[3]==[8,4]||conf2[4]==[4,8]||conf2[3]==[8,4])
+            xvals=0:0.1:4
+            yvals = [1 + 0.0123563*x - 0.630187*x^2 + 0.622464*x^3 - 0.194037*x^4 + 0.0194037*x^5 + 3.66123*10^-17*x^6 for x in xvals]
+            lines!(ax,[Point2f0([xvals[i],yvals[i]]) for i in 1:length(yvals)], color=RGBA{Float64}(fourcolors[3][1], fourcolors[3][2], fourcolors[3][3], 1-t), linewidth=lw)
+            twoconfig = conf2[3]==[4,8]||conf2[3]==[8,4] ? conf2[4] : conf2[3]
+            lines!(ax,[Point2f0(points[pt]) for pt in twoconfig], color=RGBA{Float64}(0.35, 0.35, 0.35, 1-t), linewidth=lw)
+        elseif (conf2[3]==[9,10]||conf2[3]==[9,10]||conf2[4]==[9,10]||conf2[3]==[9,10])
+            lines!(ax,[Point2f0(points[pt]) for pt in [9,10]], color=RGBA{Float64}(0.35, 0.35, 0.35, 1-t), linewidth=lw)
+            twoconfig = conf2[3]==[9,10]||conf2[3]==[10,9] ? conf2[4] : conf2[3]
+            lines!(ax,[Point2f0(points[pt]) for pt in twoconfig], color=RGBA{Float64}(fourcolors[3][1], fourcolors[3][2], fourcolors[3][3], 1-t), linewidth=lw)
+        else
+            lines!(ax,[GPoint2f0(points[pt]) for pt in conf2[3]], color=RGBA{Float64}(fourcolors[3][1], fourcolors[3][2], fourcolors[3][3], 1-t), linewidth=lw)
+            lines!(ax,[Point2f0(points[pt]) for pt in conf2[4]], color=RGBA{Float64}(0.35, 0.35, 0.35, 1-t), linewidth=lw)
+        end
+        scatter!(ax,[Point2f0([2,1])]; color=:red2,markersize=60)
+        #GLMakie.text!(ax,[GLMakie.Point2f0([2+0.05,1-0.154])], text=L"$\mu$"; color=:red2,fontsize=70)
+        scatter!(ax,[Point2f0(pt) for pt in points]; color=:black,markersize=60)
+        save("../images/homotopytriang$(t).png",fig)
+    end
+
 end
 
 #=
@@ -269,11 +386,11 @@ nonnegativity, while the baseline model does not, we add 1 to `ourmodel` and if 
 true, we add 1 to `prevmodel`. If neither model recognizes nonnegativity, we add 1 to `nomodel`.
 `pointnumber` is a counter of the samples drawn.
 =#
-function runSamplingComparison(θ, κs, Ks, aη, bη, mcoef, θbaseline; boxsize=100, numberOfSamplingRuns=250, prefix="NEW", suffix="")
+function runSamplingComparison(θ, κs, aη, bη, mcoef, θbaseline; boxsize=100, numberOfSamplingRuns=250, prefix="NEW", suffix="")
     #If the file exists, we add to the previously run tests. Else, we set everything to 0.
     global relDict = Dict()
     try
-        f = open("../data/$(prefix)$(suffix)triangstoredsolutions$(boxsize).txt", "r")
+        f = open("../data/$(prefix)$(suffix)storedsolutions$(boxsize).txt", "r")
 
         global pointnumber = parse(Int,readline(f))
         global allmodels = parse(Int,readline(f))
@@ -310,15 +427,15 @@ function runSamplingComparison(θ, κs, Ks, aη, bη, mcoef, θbaseline; boxsize
 
     for sampleindex in 1:numberOfSamplingRuns
         display("Run: $(sampleindex)")
-        global sampling = filter(sampler -> !any(t->isapprox(t,0), sampler) && evaluate(aη,vcat(Ks,κs)=>sampler)>0 && evaluate(bη,vcat(Ks,κs)=>sampler)<0, [boxsize * abs.(rand(Float64,length(vcat(Ks,κs)))) for _ in 1:1000000])
+        global sampling = filter(sampler -> !any(t->isapprox(t,0), sampler) && evaluate(aη,κs=>sampler)>0 && evaluate(bη,κs=>sampler)<0, [boxsize * abs.(rand(Float64,length(κs))) for _ in 1:1000000])
         global pointnumber = pointnumber+length(sampling)
         @showprogress for ind in 1:length(sampling)
             sampler = sampling[ind]
-            mval = evaluate(mcoef,vcat(Ks,κs)=>sampler)
-            prevval = evaluate(θbaseline, vcat(Ks,κs)=>sampler)
+            mval = evaluate(mcoef, κs=>sampler)
+            prevval = evaluate(θbaseline, κs=>sampler)
             θ_eval = []
             for j in 1:length(θ)
-                ourval = evaluate(θ[j], vcat(Ks,κs)=>sampler)
+                ourval = evaluate(θ[j], κs=>sampler)
                 push!(θ_eval, ourval)
                 if ourval >= -mval
                     global newmodel[j] += 1
@@ -409,13 +526,15 @@ function printValues( ; prefix="relTest", suffix="NEW")
     end
 end
 #=
+
 This is the main method. Use it to run all tests.
 =#
-function runTest( ; boxsize=1, numberOfSamplingRuns=100, prefix="relTest", suffix="NEW")
-    @var K[1:4] κ[1:12]
+function runTest( ; boxsize=1, numberOfSamplingRuns=100, prefix="michaelismentistest", suffix="NEW")
+    @var κ[1:12]
 
     #We choose colors with maximum distinguishability
     hexPoints = [(0,0),(1,0),(2,0),(4,1),(4,2),(3,2),(2,2),(0,1),(3,1),(1,1)]
+    K = [(κ[2]+κ[3])/κ[1], (κ[5]+κ[6])/κ[4], (κ[8]+κ[9])/κ[7], (κ[12]+κ[12])/κ[10]]
     aη = κ[3]*κ[12] - κ[6]*κ[9]
     bη = (K[2] + K[3])*κ[3]*κ[12] - (K[1]+K[4])*κ[6]*κ[9]
     coefficients = [K[1]^3*K[3]^2*κ[6]^3*κ[12]^2, K[1]^2*K[2]*K[3]^2*κ[3]*κ[6]^2*κ[12]^2, K[1]^2*K[2]*K[3]*K[4]*κ[3]*κ[6]^2*κ[9]*κ[12], K[1]*K[2]^2*K[4]*κ[3]^2*κ[6]*κ[9]^2,
@@ -438,9 +557,10 @@ function runTest( ; boxsize=1, numberOfSamplingRuns=100, prefix="relTest", suffi
 
     θ = createθcircuits(hexPoints, coefficients, lineconfigurations, triangconfigurations)
     #plotAllCovers(hexPoints, triangconfigurations, lineconfigurations)
-    runSamplingComparison(θ, [κ[3],κ[6],κ[9],κ[12]], K, aη, bη, mcoef, θ[9]; boxsize=boxsize, numberOfSamplingRuns=numberOfSamplingRuns, prefix=prefix, suffix=suffix)
+    runSamplingComparison(θ, κ, aη, bη, mcoef, θ[9]; boxsize=boxsize, numberOfSamplingRuns=numberOfSamplingRuns, prefix=prefix, suffix=suffix)
 end
 
+#=
 function runTest( ; boxsize=1000, numberOfSamplingRuns=100, prefix="relTest", suffix="NEW")
     @var K[1:4] κ[1:12]
 
@@ -468,8 +588,9 @@ function runTest( ; boxsize=1000, numberOfSamplingRuns=100, prefix="relTest", su
 
     θ = createθcircuits(hexPoints, coefficients, lineconfigurations, triangconfigurations)
     #plotAllCovers(hexPoints, triangconfigurations, lineconfigurations)
-    runSamplingComparison(θ, [κ[3],κ[6],κ[9],κ[12]], K, aη, bη, mcoef, θ[9]; boxsize=boxsize, numberOfSamplingRuns=numberOfSamplingRuns, prefix=prefix, suffix=suffix)
+    runSamplingComparison(θ, κ, aη, bη, mcoef, θ[9]; boxsize=boxsize, numberOfSamplingRuns=numberOfSamplingRuns, prefix=prefix, suffix=suffix)
 end
+=#
 
 
 function runTest_noDependencies( ; boxsize=1000, numberOfSamplingRuns=62, prefix="", suffix="noDependencies")
@@ -654,6 +775,63 @@ function plotNewtonPolytope()
     display(fig)
 end
 
+
+function createθcircuits_weighted(points, coefficients, configurations; discretization=30)
+    θdict = Dict()
+    length(configurations)>=2 || throw(error("Since we are providing a 2D heatmap of the covers, at least 3 simplicial configurations need to be provided!"))
+    for i in 1:length(configurations), j in i+1:length(configurations)
+        ijkDict = Dict()
+        for ω1 in 0:1/discretization:1
+            ijkDict[ω1] = []
+        end
+
+        for ω1 in 0:round(1/discretization, sigdigits=5):1
+            ω2=1-ω1
+            configuration1, configuration2, helper = Base.copy(configurations[i]), Base.copy(configurations[j]), []
+            while !isempty(configuration1)
+                config = pop!(configuration1)
+                if length(config)==2
+                    global barycenter = Matrix{Float64}(undef,2,2); barycenter[1,:] = [points[entry][1] for entry in config]; barycenter[2,:] = [points[entry][2] for entry in config]; 
+                    global λ = (det(barycenter) == 0) ? [0.5,0.5] : collect(inv(barycenter)*[2,1] / sum(inv(barycenter)*[2,1]))
+
+                    if config in configuration2
+                        deleteat!(configuration2, findfirst(entry -> config==entry, configuration2))
+                        push!(helper, prod([(coefficients[config[i]]/λ[i])^(λ[i]) for i in 1:length(config)]))
+                    else
+                        push!(helper, prod([(ω1*coefficients[config[i]]/λ[i])^(λ[i]) for i in 1:length(config)]))
+                    end
+                elseif length(config)==3
+                    global barycenter, msolve = Matrix{Float64}(undef,3,3), [2,1,1]; barycenter[1,:] = [points[entry][1] for entry in config]; barycenter[2,:] = [points[entry][2] for entry in config]; barycenter[3,:] = [1 for entry in config];
+                    global λ = collect(inv(barycenter)*msolve / sum(inv(barycenter)*msolve));
+                    if config in configuration2
+                        deleteat!(configuration2, findfirst(entry -> config==entry, configuration2))
+                        push!(helper, prod([(coefficients[config[i]]/λ[i])^(λ[i]) for i in 1:length(config)]))
+                    else
+                        push!(helper, prod([(ω1*coefficients[config[i]]/λ[i])^(λ[i]) for i in 1:length(config)]))
+                    end
+                end
+            end
+
+            while !isempty(configuration2)
+                config = pop!(configuration2)
+                if length(config)==2
+                    global barycenter = Matrix{Float64}(undef,2,2); barycenter[1,:] = [points[entry][1] for entry in config]; barycenter[2,:] = [points[entry][2] for entry in config]; 
+                    global λ = (det(barycenter) == 0) ? [0.5,0.5] : collect(inv(barycenter)*[2,1] / sum(inv(barycenter)*[2,1]))
+                    push!(helper, prod([(ω2*coefficients[config[i]]/λ[i])^(λ[i]) for i in 1:length(config)]))
+                elseif length(config)==3
+                    global barycenter, msolve = Matrix{Float64}(undef,3,3), [2,1,1]; barycenter[1,:] = [points[entry][1] for entry in config]; barycenter[2,:] = [points[entry][2] for entry in config]; barycenter[3,:] = [1 for entry in config];
+                    global λ = collect(inv(barycenter)*msolve / sum(inv(barycenter)*msolve));
+                    push!(helper, prod([(ω2*coefficients[config[i]]/λ[i])^(λ[i]) for i in 1:length(config)]))
+                end
+            end
+            push!(ijkDict[ω1], sum(helper))
+        end
+        θdict[(i,j)] = ijkDict
+        println(length.(values(θdict[(i,j)])))
+    end
+    return θdict
+end
+#=
 function createθcircuits_weighted(points, coefficients, configurations; discretization=25)
     θdict = Dict()
     length(configurations)>=3 || throw(error("Since we are providing a 2D heatmap of the covers, at least 3 simplicial configurations need to be provided!"))
@@ -739,23 +917,24 @@ function createθcircuits_weighted(points, coefficients, configurations; discret
     end
     return θdict
 end
+=#
 
-function runSamplingComparison_weighted(θ, θ_weighted, κs, Ks, aη, bη, mcoef, θbaseline; discretization, boxsize=100, numberOfSamplingRuns=250, prefix="NEW", suffix="")
+function runSamplingComparison_weighted(θ, θ_weighted, κs, aη, bη, mcoef, θbaseline; discretization, boxsize=100, numberOfSamplingRuns=250, prefix="linearweight", suffix="")
     #If the file exists, we add to the previously run tests. Else, we set everything to 0.
     θkeys = keys(θ_weighted)
     ourmodel = Dict()
     no_other = Dict()
     try
-        f = open("../data/$(prefix)$(suffix)triangstoredsolutions$(boxsize).txt", "r")
-
+        f = open("../data/$(prefix)$(suffix)storedsolutions$(boxsize).txt", "r")
         global pointnumber = parse(Int,readline(f))
         while ! eof(f)  
             sstring = split(readline(f), ": ")
             keystring = split(sstring[1], "; ")
-            key = (parse(Int,keystring[1][2]), (parse(Int,keystring[1][5])), (parse(Int,keystring[1][8])))
+            key = (parse(Int,keystring[1][2]), (parse(Int,keystring[1][5])))
+            #key = (parse(Int,keystring[1][2]), (parse(Int,keystring[1][5])), (parse(Int,keystring[1][8])))
             weight = parse(Float64,keystring[2])
             ourmodel[(key, weight)] = [parse(Int,entry) for entry in split(sstring[2][2:end-1], ", ")]
-            no_other[(key, weight)] = [0 for _ in 1:length(ourmodel[(key, weight)])]
+            #no_other[(key, weight)] = [0 for _ in 1:length(ourmodel[(key, weight)])]
          end
         close(f)
     catch
@@ -764,46 +943,47 @@ function runSamplingComparison_weighted(θ, θ_weighted, κs, Ks, aη, bη, mcoe
             ijkkeys = keys(θ_weighted[key])
             for weight in ijkkeys
                 ourmodel[(key, weight)] = [0 for _ in 1:length(θ_weighted[key][weight])]
-                no_other[(key, weight)] = [0 for _ in 1:length(θ_weighted[key][weight])]
+                #no_other[(key, weight)] = [0 for _ in 1:length(θ_weighted[key][weight])]
             end
         end
     end
+    println(ourmodel)
 
     for sampleindex in 1:numberOfSamplingRuns
         display("Run: $(sampleindex)")
-        global sampling = filter(sampler -> !any(t->isapprox(t,0), sampler) && evaluate(aη,vcat(Ks,κs)=>sampler)>0 && evaluate(bη,vcat(Ks,κs)=>sampler)<0, [boxsize * abs.(rand(Float64,length(vcat(Ks,κs)))) for _ in 1:1000000])
+        global sampling = filter(sampler -> !any(t->isapprox(t,0), sampler) && evaluate(aη,κs=>sampler)>0 && evaluate(bη,κs=>sampler)<0, [boxsize * abs.(rand(Float64,length(κs))) for _ in 1:1000000])
         global pointnumber = pointnumber+length(sampling)
         @showprogress for ind in 1:length(sampling)
             sampler = sampling[ind]
-            mval = real(evaluate(mcoef,vcat(Ks,κs)=>sampler))
-            θvals = real.(evaluate.(θ, vcat(Ks,κs)=>sampler))
+            mval = real(evaluate(mcoef,κs=>sampler))
+            #θvals = real.(evaluate.(θ, vcat(Ks,κs)=>sampler))
             for key in θkeys
                 for weight in keys(θ_weighted[key])
                     for j in 1:length(θ_weighted[key][weight])
-                        ourval = evaluate(θ_weighted[key][weight][j], vcat(Ks,κs)=>sampler)
+                        ourval = evaluate(θ_weighted[key][weight][j], κs=>sampler)
                         if real(ourval) >= -mval
                             global ourmodel[(key,weight)][j] += 1
-
+                            #=
                             if all(t-> t<-mval, θvals)
                                 global no_other[(key,weight)][j] += 1
-                            end
+                            end=#
                         end
                     end
                 end
             end
-
+            
         end
 
         #SAVE the data to the file `NEWtriangstoredsolutions.txt`
-        open("../data/$(prefix)$(suffix)triangstoredsolutions$(boxsize).txt", "w") do file
+        open("../data/$(prefix)$(suffix)storedsolutions$(boxsize).txt", "w") do file
             write(file, "$(pointnumber)\n")
             for key in keys(ourmodel)
                 write(file, "$(key[1]); $(key[2]): $(ourmodel[key])\n")
             end
-            write(file, "\n NO OTHER\n")
+            #=write(file, "\n NO OTHER\n")
             for key in keys(no_other)
                 write(file, "$(key[1]); $(key[2]): $(no_other[key])\n")
-            end
+            end=#
         end
     end
 
@@ -897,8 +1077,6 @@ function plotWeightedCovers(; boxsize=1, prefix="TWOBEST", suffix="10,12,15")
                 push!(pointarray1, [weight, (i-1)/(maximum(length.(values(ourmodel1[key])))-1), ourmodel1[key][weight][i] / pointnumber1])
             end
         end
-        println(key)
-        println(pointarray1)
     end
 
     for key in keys(ourmodel2)
@@ -926,19 +1104,18 @@ function plotWeightedCovers(; boxsize=1, prefix="TWOBEST", suffix="10,12,15")
                 push!(pointarray2, [weight, (i-1)/(maximum(length.(values(ourmodel2[key])))-1), ourmodel2[key][weight][i] / pointnumber2])
             end
         end
-        println(key)
-        println(pointarray2)
     end
     Colorbar(fig[:, end+1], colorrange = (minval,maxval); size=30)
     save("../images/discretizedHeatmapnew.png",fig)
 
 end
 
-function runTest_twoBestCovers(; boxsize=1, numberOfSamplingRuns=500, prefix="TWOBEST", suffix="4,10,15", discretization=16)
-    @var K[1:4] κ[1:12]
+function runTest_twoBestCovers(; boxsize=1, numberOfSamplingRuns=100, prefix="linearweight", suffix="4,9", discretization=10)
+    @var κ[1:12]
 
     #We choose colors with maximum distinguishability
     hexPoints = [(0,0),(1,0),(2,0),(4,1),(4,2),(3,2),(2,2),(0,1),(3,1),(1,1)]
+    K = [(κ[2]+κ[3])/κ[1], (κ[5]+κ[6])/κ[4], (κ[8]+κ[9])/κ[7], (κ[12]+κ[12])/κ[10]]
     aη = κ[3]*κ[12] - κ[6]*κ[9]
     bη = (K[2] + K[3])*κ[3]*κ[12] - (K[1]+K[4])*κ[6]*κ[9]
     coefficients = [K[1]^3*K[3]^2*κ[6]^3*κ[12]^2, K[1]^2*K[2]*K[3]^2*κ[3]*κ[6]^2*κ[12]^2, K[1]^2*K[2]*K[3]*K[4]*κ[3]*κ[6]^2*κ[9]*κ[12], K[1]*K[2]^2*K[4]*κ[3]^2*κ[6]*κ[9]^2,
@@ -961,16 +1138,50 @@ function runTest_twoBestCovers(; boxsize=1, numberOfSamplingRuns=500, prefix="TW
     lineconfigurations = [[[5,1],[7,3],[8,9],[6,2],[4,10]], [[5,1],[7,3],[9,10],[6,2],[8,4]]]
 
     all(t->sort(vcat(t...))==[i for i in 1:10], configurations)||throw(error("Not sorted correctly!"))
-    oldθ = createθcircuits(hexPoints, coefficients, [], [[[3,5,8],[1,4,7],[9,10],[2,6]]])[1]
-    θ = createθcircuits(hexPoints, coefficients, lineconfigurations, triangconfigurations)
-    θ_weighted = createθcircuits_weighted(hexPoints, coefficients, configurations; discretization=discretization)
+    oldθ = createθcircuits(hexPoints, coefficients, [], [[[1,3,6],[2,5,7],[8,9],[4,10]], [[3,5,8],[1,4,7],[9,10],[2,6]]])
+    #θ = createθcircuits(hexPoints, coefficients, lineconfigurations, triangconfigurations)
+    θ_weighted = createθcircuits_weighted(hexPoints, coefficients, [[[1,3,6],[2,5,7],[8,9],[4,10]], [[3,5,8],[1,4,7],[9,10],[2,6]]]; discretization=discretization)
     #plotAllCovers(hexPoints, triangconfigurations, lineconfigurations)
-    runSamplingComparison_weighted(θ, θ_weighted, [κ[3],κ[6],κ[9],κ[12]], K, aη, bη, mcoef, oldθ; boxsize=boxsize, numberOfSamplingRuns=numberOfSamplingRuns, prefix=prefix, suffix=suffix, discretization=discretization)    
+    runSamplingComparison_weighted([], θ_weighted, κ, aη, bη, mcoef, oldθ; boxsize=boxsize, numberOfSamplingRuns=numberOfSamplingRuns, prefix=prefix, suffix=suffix, discretization=discretization)    
 end
 
-for i in [10,100,1000]
-    i == 10 ? runTest( ; boxsize=i, numberOfSamplingRuns=200) : runTest( ; boxsize=i, numberOfSamplingRuns=100)
+function printGraphs(; prefix="linearweight", suffix="4,9")
+    fig = Figure(size=(1200,500))
+    ax = Axis(fig[1,1])
+    hidedecorations!(ax)
+    hidespines!(ax)
+    for boxsize in [1,10,100,1000]
+        ourmodel = Dict()
+        try
+            f = open("../data/$(prefix)$(suffix)storedsolutions$(boxsize).txt", "r")
+    
+            global pointnumber = parse(Int,readline(f))
+            while ! eof(f)  
+                sstring = split(readline(f), ": ")
+                keystring = split(sstring[1], "; ")
+                key = (parse(Int,keystring[1][2]), (parse(Int,keystring[1][5])))
+                weight = parse(Float64,keystring[2])
+                ourmodel[weight] = [parse(Int,entry) for entry in split(sstring[2][2:end-1], ", ")]
+             end
+            close(f)
+        catch e
+            display(e)
+            continue
+        end
+        points = [ourmodel[w][1] for w in sort(Float64.(keys(ourmodel)), rev=true)]
+        display(points)
+        lines!(ax, 1:length(points), points ./ pointnumber; linewidth=9)
+    end
+    axislegend(ax, merge = true, unique = true, position = :rt, labelsize=26)
+    save("../images/$(prefix)$(suffix).png", fig)
 end
+
+#printGraphs()
+
+for i in [1,10,100,1000]
+    runTest(; boxsize=i, numberOfSamplingRuns=250)
+end
+
 #TODO Linear Coefficients test (over all regions?)
 
 #TODO How big of a region can we cover if all covers are used??? Does the best performing cover contain any points not covered by any other cover?
