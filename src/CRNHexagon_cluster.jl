@@ -500,7 +500,7 @@ function runSamplingComparison_triang_weighted(θ, θ_weighted, κs, aη, bη, m
 
     for sampleindex in 1:numberOfSamplingRuns
         display("Run: $(sampleindex)")
-        global sampling = filter(sampler -> !any(t->isapprox(t,0), sampler) && evaluate(aη,κs=>sampler)>0 && evaluate(bη,κs=>sampler)<0, [boxsize * abs.(rand(Float64,length(κs))) for _ in 1:1000000])
+        global sampling = filter(sampler -> !any(t->isapprox(t,0), sampler) && evaluate(aη,κs=>sampler)>0 && evaluate(bη,κs=>sampler)<0, [boxsize * abs.(rand(Float64,length(κs))) for _ in 1:100000])
         global pointnumber = pointnumber+length(sampling)
         for ind in 1:length(sampling)
             sampler = sampling[ind]
@@ -566,7 +566,7 @@ function runTest_twoBestCovers(; boxsize=1, numberOfSamplingRuns=100, prefix="li
 end
 
 
-function runTest_threeBestCovers(; boxsize=1, numberOfSamplingRuns=100, prefix="triangweight", suffix="4,10,15", discretization=16)
+function runTest_threeBestCovers(; boxsize=1, numberOfSamplingRuns=100, prefix="triangweight", suffix="10,12,15", discretization=16)
     @var κ[1:12]
 
     #We choose colors with maximum distinguishability
@@ -594,13 +594,12 @@ function runTest_threeBestCovers(; boxsize=1, numberOfSamplingRuns=100, prefix="
     lineconfigurations = [[[5,1],[7,3],[8,9],[6,2],[4,10]], [[5,1],[7,3],[9,10],[6,2],[8,4]]]
 
     all(t->sort(vcat(t...))==[i for i in 1:10], configurations)||throw(error("Not sorted correctly!"))
-    θ_weighted = createθcircuits_triang_weighted(hexPoints, coefficients, [[[1,3,6],[2,5,7],[8,9],[4,10]], [[1,7,9],[3,5,8],[2,6],[4,10]], [[5,1],[7,3],[8,9],[6,2],[4,10]]]; discretization=discretization)
-    display(θ_weighted)
+    θ_weighted = createθcircuits_triang_weighted(hexPoints, coefficients, [[[1,7,9],[3,5,8],[2,6],[4,10]], [[1,4,7],[3,5,10],[8,9],[2,6]], [[5,1],[7,3],[8,9],[6,2],[4,10]]]; discretization=discretization)
     runSamplingComparison_triang_weighted([], θ_weighted, κ, aη, bη, mcoef; boxsize=boxsize, numberOfSamplingRuns=numberOfSamplingRuns, prefix=prefix, suffix=suffix, discretization=discretization)    
 end
 
 
-function createθcircuits_triang_weighted(points, coefficients, configurations; discretization=16)
+function createθcircuits_triang_weighted(points, coefficients, configurations; discretization=20)
     θdict = Dict()
     length(configurations)>=3 || throw(error("Since we are providing a 2D heatmap of the covers, at least 3 simplicial configurations need to be provided!"))
     for i in 1:length(configurations), j in i+1:length(configurations), k in j+1:length(configurations)
@@ -686,7 +685,7 @@ function createθcircuits_triang_weighted(points, coefficients, configurations; 
     return θdict
 end
 
-runTest_threeBestCovers(; boxsize=1, numberOfSamplingRuns=60)
+runTest_threeBestCovers(; boxsize=1, numberOfSamplingRuns=600)
 
 #TODO Linear Coefficients test (over all regions?)
 
