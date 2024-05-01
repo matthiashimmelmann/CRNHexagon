@@ -18,9 +18,8 @@ function createθcircuits(points, coefficients, lineconfigurations, triangconfig
     m = (2,1)
     λ = []
     θ = []
-
+    println("$(points), $(coefficients), $(lineconfigurations), $(triangconfigurations)")
     for config in triangconfigurations
-        try
             global barycenter = Matrix{Float64}(undef,3,3); barycenter[1,:] = [points[entry][1] for entry in config[1]]; barycenter[2,:] = [points[entry][2] for entry in config[1]]; barycenter[3,:] = [1 for entry in config[1]];
             global msolve = [2,1,1];
             global λ1 = inv(barycenter)*msolve;
@@ -45,19 +44,15 @@ function createθcircuits(points, coefficients, lineconfigurations, triangconfig
                 global λ4 = inv(barycenterline)*[2,1];
                 global λ4 = collect(λ4 / sum(λ4))
             end
-            display([λ1,λ2,λ3,λ4])
+
             global θ1 = prod([(coefficients[config[1][i]]/λ1[i])^(λ1[i]) for i in 1:length(config[1])])
             global θ2 = prod([(coefficients[config[2][i]]/λ2[i])^(λ2[i]) for i in 1:length(config[2])])
             global θ3 = prod([(coefficients[config[3][i]]/λ3[i])^(λ3[i]) for i in 1:length(config[3])])
             global θ4 = prod([(coefficients[config[4][i]]/λ4[i])^(λ4[i]) for i in 1:length(config[4])])
             push!(θ,θ1+θ2+θ3+θ4)
-        catch
-            continue
-        end
     end
 
     for config in lineconfigurations
-        try
             global barycenterline = Matrix{Float64}(undef,2,2); barycenterline[1,:] = [points[entry][1] for entry in config[1]]; barycenterline[2,:] = [points[entry][2] for entry in config[1]]; 
             if det(barycenterline) == 0
                 global λ1=[0.5,0.5]
@@ -105,9 +100,7 @@ function createθcircuits(points, coefficients, lineconfigurations, triangconfig
             global θ4 = prod([(coefficients[config[4][i]]/λ4[i])^(λ4[i]) for i in 1:length(config[4])])
             global θ5 = prod([(coefficients[config[5][i]]/λ5[i])^(λ5[i]) for i in 1:length(config[5])])
             push!(θ,θ1+θ2+θ3+θ4+θ5)
-        catch
-            continue
-        end
+            display(θ)
     end
 
     return θ
@@ -229,6 +222,7 @@ function plot_intermediate_covers(points, conf1, conf2)
     end
 
 end
+
 
 #=
 Here, all 16 configurations are plotted and saved. The colors are optimized with respect to distinguishability.
@@ -379,6 +373,7 @@ function plottriangle()
     save("../images/triangexample.png",fig)
 end
 
+
 #=
 Sample randomly from the region [0,boxsize]^n. Whenever aη>0 and bη<0, the sample is accepted. 
 We compare all samples to the baseline given by `θbaseline`. Whenever the new model recognizes
@@ -510,7 +505,6 @@ function printValues( ; prefix="relTest", suffix="NEW")
         end
 
         close(f)
-        println(onlyonemodel)
         containmentArray, almostContainmentArray = [[] for _ in 1:16], [[] for _ in 1:16]
         for key in keys(relDict)
             if relDict[key]==0
@@ -525,13 +519,12 @@ function printValues( ; prefix="relTest", suffix="NEW")
         foreach(t->println("$(t): $(almostContainmentArray[t])"), 1:16)
     end
 end
-#=
 
+#=
 This is the main method. Use it to run all tests.
 =#
-function runTest( ; boxsize=1, numberOfSamplingRuns=330, prefix="michaelismentontest", suffix="NEW")
+function runTest( ; boxsize=1, numberOfSamplingRuns=320, prefix="michaelismentontest", suffix="NEW")
     @var κ[1:12]
-
     #We choose colors with maximum distinguishability
     hexPoints = [(0,0),(1,0),(2,0),(4,1),(4,2),(3,2),(2,2),(0,1),(3,1),(1,1)]
     K = [(κ[2]+κ[3])/κ[1], (κ[5]+κ[6])/κ[4], (κ[8]+κ[9])/κ[7], (κ[11]+κ[12])/κ[10]]
@@ -581,7 +574,8 @@ function runTest_noDependencies( ; boxsize=1000, numberOfSamplingRuns=62, prefix
     runSamplingComparison(θ, κ[1:11], Vector{Float64}([]), Expression(1), Expression(-1), Expression(-κ[11]), θ[9]; boxsize=boxsize, numberOfSamplingRuns=numberOfSamplingRuns, prefix=prefix, suffix=suffix)
 end
 
-function computeCoverInvariants( ; startboxsize=1, finalboxsize=1000, prefix="NEW", suffix="")
+
+function computeCoverInvariants( ; boxsizes=[0.1,1,10,100], prefix="michaelismentontest", suffix="NEW")
     fig = Figure(size=(1300,500))
     ax_ourmodel = Axis(fig[1,1]; title="Our Model Won", xlabel=L"$\log(b)+1$", ylabel=L"$\perthousand$")
     ax_prevmodel = Axis(fig[1,2]; title="Baseline Model Won", xlabel=L"$\log(b)+1$", ylabel=L"$\perthousand$")
@@ -590,7 +584,7 @@ function computeCoverInvariants( ; startboxsize=1, finalboxsize=1000, prefix="NE
     allmodeldots, ourmodeldots, prevmodeldots, nomodeldots, puremodel = [Vector{Float64}([]) for _ in 1:16], [Vector{Float64}([]) for _ in 1:16], [Vector{Float64}([]) for _ in 1:16], [Vector{Float64}([]) for _ in 1:16], [Vector{Float64}([]) for _ in 1:16]
     xaxis = Vector{Float64}([])
 
-    for boxsize in startboxsize:finalboxsize
+    for boxsize in boxsizes
         try
             f = open("../data/$(prefix)$(suffix)triangstoredsolutions$(boxsize).txt", "r")
             
@@ -620,7 +614,7 @@ function computeCoverInvariants( ; startboxsize=1, finalboxsize=1000, prefix="NE
     end
 
     #print Latex table code
-    for θ in 1:Int(length(ourmodeldots)/2)
+    #=for θ in 1:Int(length(ourmodeldots)/2)
         print("~&+&")
         for i in 1:length(ourmodeldots[θ])
             print("$(ourmodeldots[θ][i])&$(ourmodeldots[θ+8][i])&")
@@ -636,7 +630,7 @@ function computeCoverInvariants( ; startboxsize=1, finalboxsize=1000, prefix="NE
             print("$(nomodeldots[θ][i])&$(nomodeldots[θ+8][i])&")
         end
         print("0&~\\\\[.3mm] \\thickhline \n\n")
-    end
+    end=#
     
     print("~&+&-&0&+&-&0&+&-&0\\\\ \\thickhline \n\n")
     for θ in 1:Int(length(ourmodeldots))
@@ -663,6 +657,7 @@ function computeCoverInvariants( ; startboxsize=1, finalboxsize=1000, prefix="NE
     foreach(line->lines!(ax_nomodel, xaxis, nomodeldots[line] ./ nomodeldots[line][1]; linewidth=4, color = colors[line]), 1:length(nomodeldots))
     save("../images/$(prefix)$(suffix)$(length(ourmodeldots))cover_curveplots.png", fig)
 end
+
 
 function compareTwoCovers(cover_suggested::Int, cover_baseline::Int; numberOfSamplingRuns=100, boxsizes=[5 for _ in 1:8])
     @var K[1:4] κ[1:12]
@@ -719,7 +714,7 @@ function empiricalComparisonOfTwoCovers(θsuggestion, θbaseline, K, κ, aη, b�
             end
         end
     end
-
+    
     fig = Figure(size=(1200,1200))
     ax = [Axis(fig[1,1]; xlabel = L"K_1", ylabel=L"K_2"), Axis(fig[1,2]; xlabel = L"K_3", ylabel=L"K_4"), Axis(fig[2,1]; xlabel = L"$\kappa_3$", ylabel=L"$\kappa_6$"), Axis(fig[2,2]; xlabel = L"$\kappa_9$", ylabel=L"$\kappa_{12}$")]
     for pic in 1:4
@@ -729,7 +724,9 @@ function empiricalComparisonOfTwoCovers(θsuggestion, θbaseline, K, κ, aη, b�
         scatter!(ax[pic], [Point2f0(pt[(2*(pic-1)+1):(2*(pic-1)+2)]) for pt in vector_our_wins]; color=:green3, markersize=1, markerstrokewidth=0)
     end
     save("../images/bestcoverplots$(cover_1)-$(cover_2).png", fig)
+    
 end
+
 
 function plotNewtonPolytope()
     vertices = [[4.,0,2], [2.,2,2], [4.,0,1], [3.,2,1], [2.,3,1], [0.,4,1], [2.,3,0], [2.,2,0], [1.,4,0], [0.,4,0]]
@@ -798,7 +795,8 @@ function createθcircuits_weighted(points, coefficients, configurations; discret
     end
     return θdict
 end
-#=
+
+
 function createθcircuits_weighted(points, coefficients, configurations; discretization=25)
     θdict = Dict()
     length(configurations)>=3 || throw(error("Since we are providing a 2D heatmap of the covers, at least 3 simplicial configurations need to be provided!"))
@@ -884,7 +882,7 @@ function createθcircuits_weighted(points, coefficients, configurations; discret
     end
     return θdict
 end
-=#
+
 
 function runSamplingComparison_weighted(θ, θ_weighted, κs, aη, bη, mcoef, θbaseline; discretization, boxsize=100, numberOfSamplingRuns=250, prefix="linearweight", suffix="")
     #If the file exists, we add to the previously run tests. Else, we set everything to 0.
@@ -956,6 +954,7 @@ function runSamplingComparison_weighted(θ, θ_weighted, κs, aη, bη, mcoef, �
 
     #foreach(j->println("Case $(j): Our model performed better in $(100*round(ourmodel[j]/(ourmodel[j]+prevmodel[j]),5))% of the cases, where the other model did not work. No model found anything in $(100*round(nomodel[j]/pointnumber, 5)) of the cases."), 1:length(θ))
 end
+
 
 function plotWeightedCovers(; boxsize=1, prefix="TWOBEST", suffix="10,12,15")
     helperDict1, ourmodel1 = Dict(), Dict()
@@ -1077,6 +1076,7 @@ function plotWeightedCovers(; boxsize=1, prefix="TWOBEST", suffix="10,12,15")
 
 end
 
+
 function runTest_twoBestCovers(; boxsize=1, numberOfSamplingRuns=100, prefix="linearweight", suffix="4,9", discretization=10)
     @var κ[1:12]
 
@@ -1112,12 +1112,13 @@ function runTest_twoBestCovers(; boxsize=1, numberOfSamplingRuns=100, prefix="li
     runSamplingComparison_weighted([], θ_weighted, κ, aη, bη, mcoef, oldθ; boxsize=boxsize, numberOfSamplingRuns=numberOfSamplingRuns, prefix=prefix, suffix=suffix, discretization=discretization)    
 end
 
+
 function printGraphs(; prefix="linearweight", suffix="4,9")
     fig = Figure(size=(1200,500))
     ax = Axis(fig[1,1])
     hidedecorations!(ax)
     hidespines!(ax)
-    for boxsize in [1,10,100,1000]
+    for boxsize in [0.1,1,10,100]
         ourmodel = Dict()
         try
             f = open("../data/$(prefix)$(suffix)storedsolutions$(boxsize).txt", "r")
@@ -1144,10 +1145,11 @@ function printGraphs(; prefix="linearweight", suffix="4,9")
 end
 
 #printGraphs()
-
-for i in [1,10,100,1000]
-    runTest(; boxsize=i, numberOfSamplingRuns=250)
-end
+#=
+for i in [0.1,1,10,100]
+    runTest(; boxsize=i, numberOfSamplingRuns=300)
+end=#
+computeCoverInvariants()
 
 #TODO Linear Coefficients test (over all regions?)
 
