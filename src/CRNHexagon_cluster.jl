@@ -208,7 +208,7 @@ function runSamplingComparison(θ, κs, aη, bη, mcoef, θbaseline; boxsize=100
 end
 
 function printValues( ; prefix="relTest", suffix="NEW")
-    for boxsize in [1,10,100,1000]
+    for boxsize in ["0.1","1","10","100"]
         print("$(boxsize): \n")
         f = open("../data/$(prefix)$(suffix)triangstoredsolutions$(boxsize).txt", "r")
         global relDict = Dict()
@@ -687,7 +687,7 @@ function createθcircuits_triang_weighted(points, coefficients, configurations; 
     return θdict
 end
 
-runTest_threeBestCovers(; boxsize=1, numberOfSamplingRuns=520)
+printValues( ; prefix="relTest", suffix="NEW")
 
 #TODO Linear Coefficients test (over all regions?)
 

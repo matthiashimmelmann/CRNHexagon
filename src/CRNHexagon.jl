@@ -1,6 +1,6 @@
 module CRNHexagon
 
-import GLMakie: rotate!, text!, Colorbar, heatmap, heatmap!, xlims!, ylims!, plot!, Point2f0, lines!, Figure, Axis, save, hidespines!, hidedecorations!, mesh!, scatter!, text!, RGBA, RGB, poly!, Axis3, Point3f0
+import GLMakie: axislegend, rotate!, text!, Colorbar, heatmap, heatmap!, xlims!, ylims!, plot!, Point2f0, lines!, Figure, Axis, save, hidespines!, hidedecorations!, mesh!, scatter!, text!, RGBA, RGB, poly!, Axis3, Point3f0
 import HomotopyContinuation: @var, evaluate, Expression
 import LinearAlgebra: inv, det
 import ProgressMeter: @showprogress
@@ -100,7 +100,6 @@ function createθcircuits(points, coefficients, lineconfigurations, triangconfig
             global θ4 = prod([(coefficients[config[4][i]]/λ4[i])^(λ4[i]) for i in 1:length(config[4])])
             global θ5 = prod([(coefficients[config[5][i]]/λ5[i])^(λ5[i]) for i in 1:length(config[5])])
             push!(θ,θ1+θ2+θ3+θ4+θ5)
-            display(θ)
     end
 
     return θ
@@ -484,8 +483,8 @@ function runSamplingComparison(θ, κs, aη, bη, mcoef, θbaseline; boxsize=100
     #foreach(j->println("Case $(j): Our model performed better in $(100*round(ourmodel[j]/(ourmodel[j]+prevmodel[j]),5))% of the cases, where the other model did not work. No model found anything in $(100*round(nomodel[j]/pointnumber, 5)) of the cases."), 1:length(θ))
 end
 
-function printValues( ; prefix="relTest", suffix="NEW")
-    for boxsize in [1,10,100,1000]
+function printValues( ; boxsizes = ["0.1","1","10","100"], prefix="michaelismentontest", suffix="NEW")
+    for boxsize in boxsizes
         print("$(boxsize): \n")
         f = open("../data/$(prefix)$(suffix)triangstoredsolutions$(boxsize).txt", "r")
         global relDict = Dict()
@@ -509,7 +508,7 @@ function printValues( ; prefix="relTest", suffix="NEW")
         for key in keys(relDict)
             if relDict[key]==0
                 push!(containmentArray[key[1]], key[2])
-            elseif relDict[key]<3
+            elseif relDict[key]<10
                 push!(almostContainmentArray[key[1]], key[2])
             end
         end
@@ -575,42 +574,43 @@ function runTest_noDependencies( ; boxsize=1000, numberOfSamplingRuns=62, prefix
 end
 
 
-function computeCoverInvariants( ; boxsizes=[0.1,1,10,100], prefix="michaelismentontest", suffix="NEW")
+function computeCoverInvariants( ; boxsizes=["0.1","1","10","100"], prefix="michaelismentontest", suffix="NEW")
     fig = Figure(size=(1300,500))
     ax_ourmodel = Axis(fig[1,1]; title="Our Model Won", xlabel=L"$\log(b)+1$", ylabel=L"$\perthousand$")
     ax_prevmodel = Axis(fig[1,2]; title="Baseline Model Won", xlabel=L"$\log(b)+1$", ylabel=L"$\perthousand$")
     ax_nomodel = Axis(fig[1,3]; title="Neither Model Won", xlabel=L"$\log(b)+1$", ylabel=L"$\perthousand$")
     #hidedecorations!(ax_ourmodel); hidedecorations!(ax_prevmodel); hidedecorations!(ax_nomodel);
     allmodeldots, ourmodeldots, prevmodeldots, nomodeldots, puremodel = [Vector{Float64}([]) for _ in 1:16], [Vector{Float64}([]) for _ in 1:16], [Vector{Float64}([]) for _ in 1:16], [Vector{Float64}([]) for _ in 1:16], [Vector{Float64}([]) for _ in 1:16]
-    xaxis = Vector{Float64}([])
 
     for boxsize in boxsizes
         try
             f = open("../data/$(prefix)$(suffix)triangstoredsolutions$(boxsize).txt", "r")
             
             global pointnumber = parse(Int,readline(f))
+            global allmodels = parse(Int,readline(f))
+            global onlyone = [parse(Int,entry) for entry in split(readline(f)[2:end-1], ", ")]
             global allpoints = [parse(Int,entry) for entry in split(readline(f)[2:end-1], ", ")]
             global ourmodel = [parse(Int,entry) for entry in split(readline(f)[2:end-1], ", ")]
             global prevmodel = [parse(Int,entry) for entry in split(readline(f)[2:end-1], ", ")]
             global nomodel = [parse(Int,entry) for entry in split(readline(f)[2:end-1], ", ")]
-
+            display(allmodels/pointnumber)
             close(f)
         catch
             continue
         end
-
-        permille_allmodels, permille_ourmodel, permille_prevmodel, permille_nomodel, percent_ourmodel_pure = round.(round.(10000*allpoints ./ pointnumber, digits=2)/10000, digits=6), round.(10000*ourmodel ./ pointnumber, digits=2), round.(10000*prevmodel ./ pointnumber, digits=2), round.(10000*nomodel ./ pointnumber, digits=2), round.(100 * (pointnumber .- (nomodel .+ prevmodel)) ./ pointnumber, digits=3)
+        
+        permille_allmodels, permille_ourmodel, permille_prevmodel, permille_nomodel, percent_ourmodel_pure = round.(round.(10000*allpoints ./ pointnumber, digits=2)/10000, digits=5), round.(100*ourmodel ./ pointnumber, digits=2), round.(100*prevmodel ./ pointnumber, digits=2), round.(100*nomodel ./ pointnumber, digits=2), round.(100 * (pointnumber .- (nomodel .+ prevmodel)) ./ pointnumber, digits=3)
         foreach(i->push!(allmodeldots[i], permille_allmodels[i]), 1:length(permille_allmodels))
         foreach(i->push!(ourmodeldots[i], permille_ourmodel[i]), 1:length(permille_ourmodel))
         foreach(i->push!(prevmodeldots[i], permille_prevmodel[i]), 1:length(permille_ourmodel))
         foreach(i->push!(nomodeldots[i], permille_nomodel[i]), 1:length(permille_ourmodel))
         foreach(i->push!(puremodel[i], percent_ourmodel_pure[i]), 1:length(percent_ourmodel_pure))
 
-        push!(xaxis, log(boxsize)+1)
+        #push!(xaxis, log(boxsize)+1)
         
-        println("$(boxsize):\t ourmodel\t prevmodel\t nomodel\t ourmodel_pure[%]")
-        foreach(θ -> println("$(θ): \t$(permille_ourmodel[θ]) \t$(permille_prevmodel[θ]) \t$(permille_nomodel[θ]) \t$(percent_ourmodel_pure[θ])"), 1:length(ourmodel))
-        println("\n")
+        #println("$(boxsize):\t ourmodel\t prevmodel\t nomodel\t ourmodel_pure[%]")
+        #foreach(θ -> println("$(θ): \t$(permille_ourmodel[θ]) \t$(permille_prevmodel[θ]) \t$(permille_nomodel[θ]) \t$(percent_ourmodel_pure[θ])"), 1:length(ourmodel))
+        #println("\n")
     end
 
     #print Latex table code
@@ -651,11 +651,11 @@ function computeCoverInvariants( ; boxsizes=[0.1,1,10,100], prefix="michaelismen
         print("\\\\ \\hline \n")
     end
 
-    colors = colormap("Blues", length(ourmodeldots); logscale=false)
-    foreach(line->lines!(ax_ourmodel, xaxis, ourmodeldots[line] ./ ourmodeldots[line][1]; linewidth=4, color = colors[line]), 1:length(ourmodeldots))
-    foreach(line->lines!(ax_prevmodel, xaxis, prevmodeldots[line] ./ prevmodeldots[line][1]; linewidth=4, color = colors[line]), 1:length(prevmodeldots))
-    foreach(line->lines!(ax_nomodel, xaxis, nomodeldots[line] ./ nomodeldots[line][1]; linewidth=4, color = colors[line]), 1:length(nomodeldots))
-    save("../images/$(prefix)$(suffix)$(length(ourmodeldots))cover_curveplots.png", fig)
+    #colors = colormap("Blues", length(ourmodeldots); logscale=false)
+    #foreach(line->lines!(ax_ourmodel, xaxis, ourmodeldots[line] ./ ourmodeldots[line][1]; linewidth=4, color = colors[line]), 1:length(ourmodeldots))
+    #foreach(line->lines!(ax_prevmodel, xaxis, prevmodeldots[line] ./ prevmodeldots[line][1]; linewidth=4, color = colors[line]), 1:length(prevmodeldots))
+    #foreach(line->lines!(ax_nomodel, xaxis, nomodeldots[line] ./ nomodeldots[line][1]; linewidth=4, color = colors[line]), 1:length(nomodeldots))
+    #save("../images/$(prefix)$(suffix)$(length(ourmodeldots))cover_curveplots.png", fig)
 end
 
 
@@ -1118,7 +1118,7 @@ function printGraphs(; prefix="linearweight", suffix="4,9")
     ax = Axis(fig[1,1])
     hidedecorations!(ax)
     hidespines!(ax)
-    for boxsize in [0.1,1,10,100]
+    for boxsize in ["0.1","1","10","100"]
         ourmodel = Dict()
         try
             f = open("../data/$(prefix)$(suffix)storedsolutions$(boxsize).txt", "r")
@@ -1138,7 +1138,7 @@ function printGraphs(; prefix="linearweight", suffix="4,9")
         end
         points = [ourmodel[w][1] for w in sort(Float64.(keys(ourmodel)), rev=true)]
         display(points)
-        lines!(ax, 1:length(points), points ./ pointnumber; linewidth=9)
+        lines!(ax, 1:length(points), points ./ pointnumber; linewidth=9, label = "$(boxsize)")
     end
     axislegend(ax, merge = true, unique = true, position = :rt, labelsize=26)
     save("../images/$(prefix)$(suffix).png", fig)
@@ -1150,7 +1150,8 @@ for i in [0.1,1,10,100]
     runTest(; boxsize=i, numberOfSamplingRuns=300)
 end=#
 computeCoverInvariants()
-
+printValues()
+printGraphs()
 #TODO Linear Coefficients test (over all regions?)
 
 #TODO How big of a region can we cover if all covers are used??? Does the best performing cover contain any points not covered by any other cover?
