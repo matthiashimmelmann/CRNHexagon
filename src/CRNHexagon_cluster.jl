@@ -147,7 +147,7 @@ function runSamplingComparison(θ, κs, aη, bη, mcoef, θbaseline; boxsize=100
 
     for sampleindex in 1:numberOfSamplingRuns
         println("Run: $(sampleindex)")
-        global sampling = filter(sampler -> !any(t->isapprox(t,0), sampler) && evaluate(aη, κs=>sampler)>0 && evaluate(bη, κs=>sampler)<0, [boxsize * abs.(rand(Float64, length(κs))) for _ in 1:1000000])
+        global sampling = filter(sampler -> !any(t->isapprox(t,0), sampler) && evaluate(aη, κs=>sampler)>0 && evaluate(bη, κs=>sampler)<0, [parse(Float64,boxsize) * abs.(rand(Float64, length(κs))) for _ in 1:1000000])
         global pointnumber = pointnumber+length(sampling)
         for ind in 1:length(sampling)
             sampler = sampling[ind]
@@ -246,7 +246,7 @@ end
 
 This is the main method. Use it to run all tests.
 =#
-function runTest( ; boxsize=1, numberOfSamplingRuns=330, prefix="michaelismentontest", suffix="NEW")
+function runTest( ; boxsize=1, numberOfSamplingRuns=200, prefix="michaelismentontest", suffix="NEW")
     @var κ[1:12]
 
     #We choose colors with maximum distinguishability
@@ -691,7 +691,9 @@ function createθcircuits_triang_weighted(points, coefficients, configurations; 
     return θdict
 end
 
-runTest_threeBestCovers()
+for i in ["0.1", "1", "10", "100.0"]
+    runTest(; boxsize=i)
+end
 
 #TODO Linear Coefficients test (over all regions?)
 
