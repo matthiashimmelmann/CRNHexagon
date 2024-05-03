@@ -246,7 +246,7 @@ end
 
 This is the main method. Use it to run all tests.
 =#
-function runTest( ; boxsize=1, numberOfSamplingRuns=200, prefix="michaelismentontest", suffix="NEW")
+function runTest( ; boxsize=1, numberOfSamplingRuns=150, prefix="michaelismentontest", suffix="NEW")
     @var κ[1:12]
 
     #We choose colors with maximum distinguishability
@@ -691,8 +691,12 @@ function createθcircuits_triang_weighted(points, coefficients, configurations; 
     return θdict
 end
 
-for i in ["0.1", "1", "10", "100.0"]
-    runTest(; boxsize=i)
+for i in ["100", "10", "0.1", "1"]
+    if i=="100"
+        runTest(; boxsize=i, numberOfSamplingRuns=250)
+    else
+        runTest(; boxsize=i, numberOfSamplingRuns=150)
+    end
 end
 
 #TODO Linear Coefficients test (over all regions?)
