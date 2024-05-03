@@ -439,6 +439,8 @@ function runSamplingComparison_weighted(θ, θ_weighted, κs, aη, bη, mcoef; d
         end
     end
 
+    println(ourmodel)
+
     for sampleindex in 1:numberOfSamplingRuns
         display("Run: $(sampleindex)")
         global sampling = filter(sampler -> !any(t->isapprox(t,0), sampler) && evaluate(aη,κs=>sampler)>0 && evaluate(bη,κs=>sampler)<0, [boxsize * abs.(rand(Float64,length(κs))) for _ in 1:1000000])
@@ -532,7 +534,7 @@ function runSamplingComparison_triang_weighted(θ, θ_weighted, κs, aη, bη, m
 end
 
 
-function runTest_twoBestCovers(; boxsize=1, numberOfSamplingRuns=100, prefix="linearweight", suffix="4,9", discretization=20)
+function runTest_twoBestCovers(; boxsize=1, numberOfSamplingRuns=200, prefix="linearweight", suffix="4,9", discretization=20)
     @var κ[1:12]
 
     #We choose colors with maximum distinguishability
@@ -568,7 +570,7 @@ function runTest_twoBestCovers(; boxsize=1, numberOfSamplingRuns=100, prefix="li
 end
 
 
-function runTest_threeBestCovers(; boxsize=1, numberOfSamplingRuns=100, prefix="triangweight", suffix="4,10,15", discretization=16)
+function runTest_threeBestCovers(; boxsize=1, numberOfSamplingRuns=1800, prefix="triangweight", suffix="4,9,15", discretization=16)
     @var κ[1:12]
 
     #We choose colors with maximum distinguishability
@@ -596,7 +598,7 @@ function runTest_threeBestCovers(; boxsize=1, numberOfSamplingRuns=100, prefix="
     lineconfigurations = [[[5,1],[7,3],[8,9],[6,2],[4,10]], [[5,1],[7,3],[9,10],[6,2],[8,4]]]
 
     all(t->sort(vcat(t...))==[i for i in 1:10], configurations)||throw(error("Not sorted correctly!"))
-    θ_weighted = createθcircuits_triang_weighted(hexPoints, coefficients, [[[1,3,6],[2,5,7],[8,9],[4,10]], [[1,7,9],[3,5,8],[2,6],[4,10]], [[5,1],[7,3],[8,9],[6,2],[4,10]]]; discretization=discretization)
+    θ_weighted = createθcircuits_triang_weighted(hexPoints, coefficients, [[[1,3,6],[2,5,7],[8,9],[4,10]], [[3,5,8],[1,4,7],[9,10],[2,6]], [[5,1],[7,3],[8,9],[6,2],[4,10]]]; discretization=discretization)
     runSamplingComparison_triang_weighted([], θ_weighted, κ, aη, bη, mcoef; boxsize=boxsize, numberOfSamplingRuns=numberOfSamplingRuns, prefix=prefix, suffix=suffix, discretization=discretization)    
 end
 
@@ -687,7 +689,7 @@ function createθcircuits_triang_weighted(points, coefficients, configurations; 
     return θdict
 end
 
-printValues( ; prefix="relTest", suffix="NEW")
+runTest_threeBestCovers()
 
 #TODO Linear Coefficients test (over all regions?)
 
