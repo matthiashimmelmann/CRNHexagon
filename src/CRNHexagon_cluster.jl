@@ -372,7 +372,7 @@ function createθcircuits_weighted(points, coefficients, configurations; discret
                 if length(config)==2
                     global barycenter = Matrix{Float64}(undef,2,2); barycenter[1,:] = [points[entry][1] for entry in config]; barycenter[2,:] = [points[entry][2] for entry in config]; 
                     global λ = (det(barycenter) == 0) ? [0.5,0.5] : collect(inv(barycenter)*[2,1] / sum(inv(barycenter)*[2,1]))
-
+                    println(points," ",λ)
                     if config in configuration2
                         deleteat!(configuration2, findfirst(entry -> config==entry, configuration2))
                         push!(helper, prod([(coefficients[config[i]]/λ[i])^(λ[i]) for i in 1:length(config)]))
@@ -382,6 +382,7 @@ function createθcircuits_weighted(points, coefficients, configurations; discret
                 elseif length(config)==3
                     global barycenter, msolve = Matrix{Float64}(undef,3,3), [2,1,1]; barycenter[1,:] = [points[entry][1] for entry in config]; barycenter[2,:] = [points[entry][2] for entry in config]; barycenter[3,:] = [1 for entry in config];
                     global λ = collect(inv(barycenter)*msolve / sum(inv(barycenter)*msolve));
+                    println(points," ",λ)
                     if config in configuration2
                         deleteat!(configuration2, findfirst(entry -> config==entry, configuration2))
                         push!(helper, prod([(coefficients[config[i]]/λ[i])^(λ[i]) for i in 1:length(config)]))
@@ -453,8 +454,8 @@ function runSamplingComparison_weighted(θ, θ_weighted, κs, aη, bη, mcoef; d
                 for weight in keys(θ_weighted[key])
                     for j in 1:length(θ_weighted[key][weight])
                         ourval = evaluate(θ_weighted[key][weight][j], κs=>sampler)
-                        if real(ourval) >= -mval
-                            global ourmodel[(key,weight)][j] += 1
+                        if ourval >= -mval
+                            global ourmodel[(key,weight)][j] = ourmodel[(key,weight)][j] + 1
                         end
                     end
                 end
@@ -500,27 +501,29 @@ function runSamplingComparison_triang_weighted(θ, θ_weighted, κs, aη, bη, m
         end
     end
 
-    display(ourmodel)
-
     for sampleindex in 1:numberOfSamplingRuns
         display("Run: $(sampleindex)")
         global sampling = filter(sampler -> !any(t->isapprox(t,0), sampler) && evaluate(aη,κs=>sampler)>0 && evaluate(bη,κs=>sampler)<0, [boxsize * abs.(rand(Float64,length(κs))) for _ in 1:100000])
         global pointnumber = pointnumber+length(sampling)
         for ind in 1:length(sampling)
             sampler = sampling[ind]
-            mval = real(evaluate(mcoef,κs=>sampler))
+            mval = evaluate(mcoef, κs=>sampler)
             #θvals = real.(evaluate.(θ, vcat(Ks,κs)=>sampler))
             for key in θkeys
                 for weight in keys(θ_weighted[key])
                     for j in 1:length(θ_weighted[key][weight])
                         ourval = evaluate(θ_weighted[key][weight][j], κs=>sampler)
-                        if real(ourval) >= -mval
-                            global ourmodel[(key,weight)][j] += 1
+                        if ourval >= -mval
+                            global ourmodel[(key,weight)][j] = ourmodel[(key,weight)][j]+1
                         end
                     end
                 end
             end
         end
+        display(length(sampling))
+        display(ourmodel[((1,2,3),0.0)][1]/pointnumber)
+        display(ourmodel[((1,2,3),0.0)][end]/pointnumber)
+        display(ourmodel[((1,2,3),1.0)][1]/pointnumber)
 
         open("../data/$(prefix)$(suffix)storedsolutions$(boxsize).txt", "w") do file
             write(file, "$(pointnumber)\n")
@@ -534,7 +537,7 @@ function runSamplingComparison_triang_weighted(θ, θ_weighted, κs, aη, bη, m
 end
 
 
-function runTest_twoBestCovers(; boxsize=1, numberOfSamplingRuns=200, prefix="linearweight", suffix="4,9", discretization=20)
+function runTest_twoBestCovers(; boxsize=1, numberOfSamplingRuns=150, prefix="linearweight", suffix="4,9", discretization=20)
     @var κ[1:12]
 
     #We choose colors with maximum distinguishability
@@ -570,19 +573,19 @@ function runTest_twoBestCovers(; boxsize=1, numberOfSamplingRuns=200, prefix="li
 end
 
 
-function runTest_threeBestCovers(; boxsize=1, numberOfSamplingRuns=1800, prefix="triangweight", suffix="4,9,15", discretization=16)
+function runTest_threeBestCovers(; boxsize=1, numberOfSamplingRuns=1800, prefix="triangweightNEXTTRY", suffix="9,12,15", discretization=16)
     @var κ[1:12]
 
     #We choose colors with maximum distinguishability
     hexPoints = [(0,0),(1,0),(2,0),(4,1),(4,2),(3,2),(2,2),(0,1),(3,1),(1,1)]
     K = [(κ[2]+κ[3])/κ[1], (κ[5]+κ[6])/κ[4], (κ[8]+κ[9])/κ[7], (κ[11]+κ[12])/κ[10]]
     aη = κ[3]*κ[12] - κ[6]*κ[9]
-    bη = (K[2] + K[3])*κ[3]*κ[12] - (K[1]+K[4])*κ[6]*κ[9]
+    bη = (K[2] + K[3])*κ[3]*κ[12] - (K[1] + K[4])*κ[6]*κ[9]
     coefficients = [K[1]^3*K[3]^2*κ[6]^3*κ[12]^2, K[1]^2*K[2]*K[3]^2*κ[3]*κ[6]^2*κ[12]^2, K[1]^2*K[2]*K[3]*K[4]*κ[3]*κ[6]^2*κ[9]*κ[12], K[1]*K[2]^2*K[4]*κ[3]^2*κ[6]*κ[9]^2,
                     K[2]^2*K[4]*κ[3]^2*κ[9]*aη, K[2]^2*K[3]*κ[3]^2*κ[12]*aη, K[1]*K[2]*K[3]*κ[3]*κ[6]*κ[12]*aη, K[1]^2*K[3]^2*κ[6]^3*κ[12]^2, 
                     2*K[1]*K[2]*K[3]*K[4]*κ[3]^2*κ[6]*κ[9]*κ[12], 2*K[1]^2*K[2]*K[3]*κ[3]*κ[6]^2*κ[12]^2]
     mcoef = K[1]*K[2]*K[3]*κ[3]*κ[6]*κ[12]*bη
-    configurations = [[[1,7,9],[3,5,8],[2,6],[4,10]], [[1,4,7],[3,5,10],[8,9],[2,6]], [[1,5],[3,7],[8,9],[2,6],[4,10]]]
+    configurations = []
 
     triangconfigurations = [[[2,7,9],[3,6,10],[1,5],[4,8]], [[3,6,10],[2,4,7],[1,5],[8,9]], [[1,3,6],[2,5,7],[9,10],[4,8]],
     [[1,3,6],[2,5,7],[8,9],[4,10]], [[3,6,8],[2,7,9],[4,10],[1,5]], [[2,4,7],[3,6,8],[1,5],[9,10]],
@@ -595,10 +598,13 @@ function runTest_threeBestCovers(; boxsize=1, numberOfSamplingRuns=1800, prefix=
         isempty(intersect(config[1],config[2])) && isempty(intersect(config[1],config[3])) && isempty(intersect(config[1],config[4])) && isempty(intersect(config[2],config[3])) && isempty(intersect(config[2],config[4])) && isempty(intersect(config[3],config[4])) || display(config)&&throw(error("Each vertex should only be used once"))
     end
 
-    lineconfigurations = [[[5,1],[7,3],[8,9],[6,2],[4,10]], [[5,1],[7,3],[9,10],[6,2],[8,4]]]
+    θ = createθcircuits(hexPoints, coefficients, [[[1,5],[3,7],[8,9],[2,6],[4,10]]], [[[3,5,8],[1,4,7],[9,10],[2,6]], [[1,7,9],[3,5,8],[2,6],[4,10]]])
+    θ_weighted = createθcircuits_triang_weighted(hexPoints, coefficients, [[[3,5,8],[1,4,7],[9,10],[2,6]], [[1,7,9],[3,5,8],[2,6],[4,10]], [[1,5],[3,7],[8,9],[2,6],[4,10]]]; discretization=discretization)
+    
+    display(θ[2]==θ_weighted[(1,2,3)][0.0][end])
+    display(θ[3]==θ_weighted[(1,2,3)][0.0][1])
 
-    all(t->sort(vcat(t...))==[i for i in 1:10], configurations)||throw(error("Not sorted correctly!"))
-    θ_weighted = createθcircuits_triang_weighted(hexPoints, coefficients, [[[1,3,6],[2,5,7],[8,9],[4,10]], [[3,5,8],[1,4,7],[9,10],[2,6]], [[5,1],[7,3],[8,9],[6,2],[4,10]]]; discretization=discretization)
+    display(θ_weighted[(1,2,3)][1.0][1]==θ[1])
     runSamplingComparison_triang_weighted([], θ_weighted, κ, aη, bη, mcoef; boxsize=boxsize, numberOfSamplingRuns=numberOfSamplingRuns, prefix=prefix, suffix=suffix, discretization=discretization)    
 end
 
@@ -619,29 +625,27 @@ function createθcircuits_triang_weighted(points, coefficients, configurations; 
                 if length(config)==2
                     global barycenter = Matrix{Float64}(undef,2,2); barycenter[1,:] = [points[entry][1] for entry in config]; barycenter[2,:] = [points[entry][2] for entry in config]; 
                     global λ = (det(barycenter) == 0) ? [0.5,0.5] : collect(inv(barycenter)*[2,1] / sum(inv(barycenter)*[2,1]))
-
-                    if config in configuration2 && config in configuration3
+                    #=if config in configuration2 && config in configuration3
                         deleteat!(configuration2, findfirst(entry -> config==entry, configuration2))
                         deleteat!(configuration3, findfirst(entry -> config==entry, configuration3))
                         push!(helper, prod([(coefficients[config[i]]/λ[i])^(λ[i]) for i in 1:length(config)]))
                     elseif config in configuration2 || config in configuration3
                         (config in configuration2) ? deleteat!(configuration2, findfirst(entry -> config==entry, configuration2)) : deleteat!(configuration3, findfirst(entry -> config==entry, configuration3))
                         push!(helper, prod([(((config in configuration2) ? ω1+ω2 : 1-ω2)*coefficients[config[i]]/λ[i])^(λ[i]) for i in 1:length(config)]))
-                    else
-                        push!(helper, prod([(ω1*coefficients[config[i]]/λ[i])^(λ[i]) for i in 1:length(config)]))
-                    end
+                    else=#
+                    push!(helper, prod([(ω1*coefficients[config[i]]/λ[i])^(λ[i]) for i in 1:length(config)]))
                 elseif length(config)==3
                     global barycenter, msolve = Matrix{Float64}(undef,3,3), [2,1,1]; barycenter[1,:] = [points[entry][1] for entry in config]; barycenter[2,:] = [points[entry][2] for entry in config]; barycenter[3,:] = [1 for entry in config];
                     global λ = collect(inv(barycenter)*msolve / sum(inv(barycenter)*msolve));
-                    if config in configuration2 && config in configuration3
+                    #=if config in configuration2 && config in configuration3
                         deleteat!(configuration2, findfirst(entry -> config==entry, configuration2))
+                        deleteat!(configuration3, findfirst(entry -> config==entry, configuration3))
                         push!(helper, prod([(coefficients[config[i]]/λ[i])^(λ[i]) for i in 1:length(config)]))
                     elseif config in configuration2 || config in configuration3
                         (config in configuration2) ? deleteat!(configuration2, findfirst(entry -> config==entry, configuration2)) : deleteat!(configuration3, findfirst(entry -> config==entry, configuration3))
                         push!(helper, prod([(((config in configuration2) ? ω1+ω2 : 1-ω2)*coefficients[config[i]]/λ[i])^(λ[i]) for i in 1:length(config)]))
-                    else
-                        push!(helper, prod([(ω1*coefficients[config[i]]/λ[i])^(λ[i]) for i in 1:length(config)]))
-                    end
+                    else=#
+                    push!(helper, prod([(ω1*coefficients[config[i]]/λ[i])^(λ[i]) for i in 1:length(config)]))
                 end
             end
 
@@ -650,21 +654,19 @@ function createθcircuits_triang_weighted(points, coefficients, configurations; 
                 if length(config)==2
                     global barycenter = Matrix{Float64}(undef,2,2); barycenter[1,:] = [points[entry][1] for entry in config]; barycenter[2,:] = [points[entry][2] for entry in config]; 
                     global λ = (det(barycenter) == 0) ? [0.5,0.5] : collect(inv(barycenter)*[2,1] / sum(inv(barycenter)*[2,1]))
-                    if config in configuration3
+                    #=if config in configuration3
                         deleteat!(configuration3, findfirst(entry -> config==entry, configuration3))
                         push!(helper, prod([((1-ω1)*coefficients[config[i]]/λ[i])^(λ[i]) for i in 1:length(config)]))
-                    else
-                        push!(helper, prod([(ω2*coefficients[config[i]]/λ[i])^(λ[i]) for i in 1:length(config)]))
-                    end
+                    else=#
+                    push!(helper, prod([(ω2*coefficients[config[i]]/λ[i])^(λ[i]) for i in 1:length(config)]))
                 elseif length(config)==3
                     global barycenter, msolve = Matrix{Float64}(undef,3,3), [2,1,1]; barycenter[1,:] = [points[entry][1] for entry in config]; barycenter[2,:] = [points[entry][2] for entry in config]; barycenter[3,:] = [1 for entry in config];
                     global λ = collect(inv(barycenter)*msolve / sum(inv(barycenter)*msolve));
-                    if config in configuration3
+                    #=if config in configuration3
                         deleteat!(configuration3, findfirst(entry -> config==entry, configuration3))
                         push!(helper, prod([((1-ω1)*coefficients[config[i]]/λ[i])^(λ[i]) for i in 1:length(config)]))
-                    else
-                        push!(helper, prod([(ω2*coefficients[config[i]]/λ[i])^(λ[i]) for i in 1:length(config)]))
-                    end
+                    else=#
+                    push!(helper, prod([(ω2*coefficients[config[i]]/λ[i])^(λ[i]) for i in 1:length(config)]))
                 end
             end
 

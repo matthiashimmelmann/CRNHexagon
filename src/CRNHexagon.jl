@@ -967,7 +967,7 @@ function plotWeightedCovers(; boxsize=1, prefix="TWOBEST", suffix="10,12,15")
         f = open("../data/triangweight4,10,15storedsolutions1.txt", "r")
         g = open("../data/triangweight10,12,15storedsolutions1.txt", "r")
         h4915 = open("../data/triangweight4,9,15storedsolutions1.txt", "r")
-        k91215 = open("../data/triangweight9,12,15storedsolutions1.txt", "r")
+        k91215 = open("../data/triangweightNEXTTRY9,12,15storedsolutions1.txt", "r")
 
         global pointnumber1 = parse(Int,readline(f))
         while ! eof(f)  
@@ -996,7 +996,7 @@ function plotWeightedCovers(; boxsize=1, prefix="TWOBEST", suffix="10,12,15")
             weight = parse(Float64,keystring[2])
             helperDict2[(key, weight)] = [parse(Int,entry) for entry in split(sstring[2][2:end-1], ", ")]
          end
-        close(h4915)
+        close(g)
         global pointnumber3 = parse(Int,readline(h4915))
         while ! eof(h4915)  
             str = readline(h4915)
@@ -1025,11 +1025,11 @@ function plotWeightedCovers(; boxsize=1, prefix="TWOBEST", suffix="10,12,15")
             helperDict4[(key, weight)] = [parse(Int,entry) for entry in split(sstring[2][2:end-1], ", ")]
          end
         close(k91215)
-
-
     catch
         throw(error("No Data recorded!"))
     end
+
+
     for key in keys(helperDict1)
         if key[1] in keys(ourmodel1)
             ourmodel1[key[1]][key[2]] = helperDict1[key]
@@ -1044,12 +1044,29 @@ function plotWeightedCovers(; boxsize=1, prefix="TWOBEST", suffix="10,12,15")
             ourmodel2[key[1]] = Dict(key[2]=>helperDict2[key])
         end
     end
+    for key in keys(helperDict3)
+        if key[1] in keys(ourmodel3)
+            ourmodel3[key[1]][key[2]] = helperDict3[key]
+        else
+            ourmodel3[key[1]] = Dict(key[2]=>helperDict3[key])
+        end
+    end
+    for key in keys(helperDict4)
+        if key[1] in keys(ourmodel4)
+            ourmodel4[key[1]][key[2]] = helperDict4[key]
+        else
+            ourmodel4[key[1]] = Dict(key[2]=>helperDict4[key])
+        end
+    end
 
 
     global maxval1, minval1 = maximum(vcat([vcat(values(ourmodel1[key])...) for key in keys(ourmodel1)]...)) / pointnumber1, minimum(vcat([vcat(values(ourmodel1[key])...) for key in keys(ourmodel1)]...)) / pointnumber1
     global maxval2, minval2 = maximum(vcat([vcat(values(ourmodel2[key])...) for key in keys(ourmodel2)]...)) / pointnumber2, minimum(vcat([vcat(values(ourmodel2[key])...) for key in keys(ourmodel2)]...)) / pointnumber2
-    global maxval, minval = maximum([maxval1, maxval2]), minimum([minval1, minval2])
-    fig = Figure(size=(2100,1000), fontsize=30)
+    global maxval3, minval3 = maximum(vcat([vcat(values(ourmodel3[key])...) for key in keys(ourmodel3)]...)) / pointnumber3, minimum(vcat([vcat(values(ourmodel3[key])...) for key in keys(ourmodel3)]...)) / pointnumber3
+    global maxval4, minval4 = maximum(vcat([vcat(values(ourmodel4[key])...) for key in keys(ourmodel4)]...)) / pointnumber4, minimum(vcat([vcat(values(ourmodel4[key])...) for key in keys(ourmodel4)]...)) / pointnumber4
+
+    global maxval, minval = maximum([maxval1, maxval2, maxval3, maxval4]), minimum([minval1, minval2, minval3, minval4])
+    fig = Figure(size=(1500,1050), fontsize=30)
 
     
     for key in keys(ourmodel1)
@@ -1064,12 +1081,12 @@ function plotWeightedCovers(; boxsize=1, prefix="TWOBEST", suffix="10,12,15")
         end
         heatMatrix1 .= heatMatrix1[:, end:-1:1]
     
-        hm = heatmap!(ax, heatMatrix1; colormap=:viridis, colorrange = (minval,maxval1))#, colorrange=(minval/pointnumber, maxval/pointnumber))
+        hm = heatmap!(ax, heatMatrix1; colormap=:viridis, colorrange = (minval1,maxval1))#, colorrange=(minval/pointnumber, maxval/pointnumber))
         hidespines!(ax)
         hidedecorations!(ax)
         xlims!(ax, (-0.01,18))
         ylims!(ax, (-0.25,18.25))
-        text!(ax, [0.2,0.2,17.3], [-0.25,17.55,-0.25]; text=[L"10", L"15", L"4"], fontsize=38)
+        #text!(ax, [0.2,0.2,17.3], [-0.25,17.55,-0.25]; text=[L"10", L"15", L"4"], fontsize=38)
 
 
         pointarray1 = []
@@ -1097,7 +1114,7 @@ function plotWeightedCovers(; boxsize=1, prefix="TWOBEST", suffix="10,12,15")
         hidedecorations!(ax)
         xlims!(ax, (-0.01,18))
         ylims!(ax, (-0.25,18.25))
-        text!(ax, [0.2,0.2,17.3], [-0.25,17.55,-0.25]; text=[L"12", L"15", L"10"], fontsize=38)
+        #text!(ax, [0.2,0.2,17.3], [-0.25,17.55,-0.25]; text=[L"12", L"15", L"10"], fontsize=38)
 
         pointarray2 = []
         for weight in keys(ourmodel2[key])
@@ -1106,9 +1123,63 @@ function plotWeightedCovers(; boxsize=1, prefix="TWOBEST", suffix="10,12,15")
             end
         end
     end
+
+    for key in keys(ourmodel3)
+        ax=Axis(fig[2,1])
+        heatMatrix3 = Matrix{Float64}(undef,maximum(length.(values(ourmodel3[key]))),maximum(length.(values(ourmodel3[key])))); 
+        heatMatrix3 .= NaN
+        display(length.(values(ourmodel3[key])))
+        global row = 1
+        for weight in sort(collect(keys(ourmodel3[key])))
+            heatMatrix3[row,maximum(length.(values(ourmodel3[key])))-length(ourmodel3[key][weight])+1:maximum(length.(values(ourmodel3[key])))] = ourmodel3[key][weight] ./ pointnumber3
+            row += 1
+        end
+        heatMatrix3 .= heatMatrix3[:, end:-1:1]'
+    
+        global hm = heatmap!(ax, heatMatrix3; colormap=:viridis, colorrange = (minval3,maxval3))#, colorrange=(minval/pointnumber, maxval/pointnumber))
+        hidespines!(ax)
+        hidedecorations!(ax)
+        xlims!(ax, (-0.01,18))
+        ylims!(ax, (-0.25,18.25))
+        #text!(ax, [0.2,0.2,17.3], [-0.25,17.55,-0.25]; text=[L"4", L"9", L"15"], fontsize=38)
+
+        pointarray3 = []
+        for weight in keys(ourmodel3[key])
+            for i in 1:length(ourmodel3[key][weight])
+                push!(pointarray3, [weight, (i-1)/(maximum(length.(values(ourmodel3[key])))-1), ourmodel3[key][weight][i] / pointnumber3])
+            end
+        end
+    end
+
+    for key in keys(ourmodel4)
+        ax=Axis(fig[2,2])
+        heatMatrix4 = Matrix{Float64}(undef,maximum(length.(values(ourmodel4[key]))),maximum(length.(values(ourmodel4[key])))); 
+        heatMatrix4 .= NaN
+        display(length.(values(ourmodel4[key])))
+        global row = 1
+        for weight in sort(collect(keys(ourmodel4[key])))
+            heatMatrix4[row,maximum(length.(values(ourmodel4[key])))-length(ourmodel4[key][weight])+1:maximum(length.(values(ourmodel4[key])))] = ourmodel4[key][weight] ./ pointnumber4
+            row += 1
+        end
+        heatMatrix4 .= heatMatrix4[:, end:-1:1]'
+    
+        global hm = heatmap!(ax, heatMatrix4; colormap=:viridis, colorrange = (minval,maxval4))#, colorrange=(minval/pointnumber, maxval/pointnumber))
+        hidespines!(ax)
+        hidedecorations!(ax)
+        xlims!(ax, (-0.01,18))
+        ylims!(ax, (-0.25,18.25))
+        #text!(ax, [0.2,0.2,17.3], [-0.25,17.55,-0.25]; text=[L"4", L"9", L"15"], fontsize=38)
+
+        pointarray4 = []
+        for weight in keys(ourmodel4[key])
+            for i in 1:length(ourmodel4[key][weight])
+                push!(pointarray4, [weight, (i-1)/(maximum(length.(values(ourmodel4[key])))-1), ourmodel4[key][weight][i] / pointnumber4])
+            end
+        end
+    end
+
     Colorbar(fig[:, end+1], colorrange = (minval,maxval); size=30)
     save("../images/discretizedHeatmapnew.png",fig)
-
 end
 
 
@@ -1153,8 +1224,9 @@ function printGraphs(; prefix="linearweight", suffix="4,9")
     ax = Axis(fig[1,1])
     hidedecorations!(ax)
     hidespines!(ax)
+    linestyles = [:solid, :dash, :dot, :dashdot]
     global count=1
-    for boxsize in ["0.1","1","10","100"]
+    for boxsize in ["0.1","1.0","10.0","100.0"]
         ourmodel = Dict()
         try
             f = open("../data/$(prefix)$(suffix)storedsolutions$(boxsize).txt", "r")
@@ -1173,8 +1245,8 @@ function printGraphs(; prefix="linearweight", suffix="4,9")
             continue
         end
         points = [ourmodel[w][1] for w in sort(Float64.(keys(ourmodel)), rev=true)]
-        lines!(ax, 1:length(points), points ./ pointnumber; linewidth=5, color=cgrad(:PRGn_4)[count], label = "$(boxsize)")
-        scatter!(ax,[0.01,0.01],[0.978,0.979], markersize=5)
+        lines!(ax, 1:length(points), points ./ pointnumber; linewidth=6, linestyle=linestyles[count], color=cgrad(:Dark2_4)[count], label = "$(boxsize)")
+        scatter!(ax,[0.01,0.01,0.01],[0.978,0.9785,0.979], markersize=5)
         println((points ./ pointnumber)[1], " ", (points ./ pointnumber)[end])
         count+=1
     end
@@ -1187,7 +1259,7 @@ end
 for i in [0.1,1,10,100]
     runTest(; boxsize=i, numberOfSamplingRuns=300)
 end=#
-plotWeightedCovers()
+printGraphs()
 #TODO Linear Coefficients test (over all regions?)
 
 #TODO How big of a region can we cover if all covers are used??? Does the best performing cover contain any points not covered by any other cover?
