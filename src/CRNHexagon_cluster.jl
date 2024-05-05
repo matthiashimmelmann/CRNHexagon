@@ -573,7 +573,7 @@ function runTest_twoBestCovers(; boxsize=1, numberOfSamplingRuns=150, prefix="li
 end
 
 
-function runTest_threeBestCovers(; boxsize=1, numberOfSamplingRuns=1800, prefix="triangweightNEXTTRY", suffix="9,12,15", discretization=16)
+function runTest_threeBestCovers(; boxsize=1, numberOfSamplingRuns=1200, prefix="triangweightNEXTTRY", suffix="10,12,15", discretization=16)
     @var κ[1:12]
 
     #We choose colors with maximum distinguishability
@@ -598,8 +598,8 @@ function runTest_threeBestCovers(; boxsize=1, numberOfSamplingRuns=1800, prefix=
         isempty(intersect(config[1],config[2])) && isempty(intersect(config[1],config[3])) && isempty(intersect(config[1],config[4])) && isempty(intersect(config[2],config[3])) && isempty(intersect(config[2],config[4])) && isempty(intersect(config[3],config[4])) || display(config)&&throw(error("Each vertex should only be used once"))
     end
 
-    θ = createθcircuits(hexPoints, coefficients, [[[1,5],[3,7],[8,9],[2,6],[4,10]]], [[[3,5,8],[1,4,7],[9,10],[2,6]], [[1,7,9],[3,5,8],[2,6],[4,10]]])
-    θ_weighted = createθcircuits_triang_weighted(hexPoints, coefficients, [[[3,5,8],[1,4,7],[9,10],[2,6]], [[1,7,9],[3,5,8],[2,6],[4,10]], [[1,5],[3,7],[8,9],[2,6],[4,10]]]; discretization=discretization)
+    θ = createθcircuits(hexPoints, coefficients, [[[1,5],[3,7],[8,9],[2,6],[4,10]]], [[[1,7,9],[3,5,8],[2,6],[4,10]], [[1,4,7],[3,5,10],[8,9],[2,6]]])
+    θ_weighted = createθcircuits_triang_weighted(hexPoints, coefficients, [[[1,7,9],[3,5,8],[2,6],[4,10]], [[1,4,7],[3,5,10],[8,9],[2,6]], [[1,5],[3,7],[8,9],[2,6],[4,10]]]; discretization=discretization)
     
     display(θ[2]==θ_weighted[(1,2,3)][0.0][end])
     display(θ[3]==θ_weighted[(1,2,3)][0.0][1])
@@ -691,13 +691,7 @@ function createθcircuits_triang_weighted(points, coefficients, configurations; 
     return θdict
 end
 
-for i in ["100", "10", "0.1", "1"]
-    if i=="100"
-        runTest(; boxsize=i, numberOfSamplingRuns=250)
-    else
-        runTest(; boxsize=i, numberOfSamplingRuns=150)
-    end
-end
+runTest_threeBestCovers()
 
 #TODO Linear Coefficients test (over all regions?)
 
