@@ -1256,14 +1256,14 @@ function printGraphs(; prefix="linearweight", suffix="4,9")
     save("../images/$(prefix)$(suffix).png", fig)
 end
 
-#computeCoverInvariants()
+computeCoverInvariants()
 #plotWeightedCovers()
 #=
 for i in [0.1,1,10,100]
     runTest(; boxsize=i, numberOfSamplingRuns=300)
 end=#
 #computeCoverInvariants()
-runTest()
+#runTest()
 
 #TODO Linear Coefficients test (over all regions?)
 
