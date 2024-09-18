@@ -306,7 +306,7 @@ function plotAllCovers(points, triangconfigurations, lineconfigurations)
         scatter!(ax,[Point2f0([2,1])]; color=:red2,markersize=60)
         #GLMakie.text!(ax,[GLMakie.Point2f0([2+0.05,1-0.154])], text=L"$\mu$"; color=:red2,fontsize=70)
         scatter!(ax,[Point2f0(pt) for pt in points]; color=:black,markersize=60)
-        text!(ax,[Point2f0([0.1,1.8])], text=L"%$(findfirst(t->t==config,triangconfigurations))"; color=:black,fontsize=85)
+        text!(ax,[Point2f0([0.1,1.8])], text=L"\mathcal{CC}({%$(findfirst(t->t==config,triangconfigurations))})"; color=:black,fontsize=85)
         save("../images/NEWtriangnoline$(findfirst(t->t==config,triangconfigurations)).png",fig)
     end
 
@@ -351,7 +351,7 @@ function plotAllCovers(points, triangconfigurations, lineconfigurations)
         scatter!(ax,[Point2f0([2,1])]; color=:red2,markersize=60)
         #GLMakie.text!(ax,[GLMakie.Point2f0([2+0.05,1-0.154])], text=L"$\mu$"; color=:red2,fontsize=70)
         scatter!(ax,[Point2f0(pt) for pt in points]; color=:black,markersize=60)
-        text!(ax,[Point2f0([0.1,1.8])], text=L"%$(14+findfirst(t->t==config,lineconfigurations))"; color=:black,fontsize=85)
+        text!(ax,[Point2f0([0.1,1.8])], text=L"\mathcal{CC}({%$(14+findfirst(t->t==config,lineconfigurations))})"; color=:black,fontsize=85)
         save("../images/NEWtriangline$(14+findfirst(t->t==config,lineconfigurations)).png",fig)
     end
 end
@@ -371,6 +371,64 @@ function plottriangle()
     xlims!(ax,(-0.3,4.3))
     ylims!(ax,(-0.3,2.3))
     save("../images/triangexample.png",fig)
+end
+
+function plotTwotriangles()
+    pointsForPlot = [(0,0),(2,0),(4,2),(3,2),(0,1),(2,1)]
+    fig = Figure(size=(1200,1200))
+    ax = Axis(fig[1,1], aspect=1)
+    hidespines!(ax)
+    hidedecorations!(ax)
+    poly!(ax,[Point2f0(pt) for pt in pointsForPlot[1:5]]; color=RGBA{Float64}(0.1, 0.1, 0.1, 0.04), strokewidth=0)
+
+    fourcolors = map(col -> (red(col), green(col), blue(col)), distinguishable_colors(3, [RGB(1,1,1), RGB(0,0,0)], dropseed=true, lchoices = range(25, stop=50, length=15), hchoices = range(120, stop=350, length=20)))
+    triangles = [[1,2,4],[2,3,5]]
+    poly!(ax,[Point2f0(pointsForPlot[pt]) for pt in triangles[1]]; color=RGBA{Float64}(fourcolors[1][1], fourcolors[1][2], fourcolors[1][3], 0.15),strokewidth=0)
+    lines!(ax,[Point2f0(pointsForPlot[pt]) for pt in vcat(triangles[1],triangles[1][1])], color=RGBA{Float64}(fourcolors[1][1], fourcolors[1][2], fourcolors[1][3], 1), linewidth=5)
+    poly!(ax,[Point2f0(pointsForPlot[pt]) for pt in triangles[2]]; color=RGBA{Float64}(fourcolors[2][1], fourcolors[2][2], fourcolors[2][3], 0.15),strokewidth=0)
+    lines!(ax,[Point2f0(pointsForPlot[pt]) for pt in vcat(triangles[2],triangles[2][1])], color=RGBA{Float64}(fourcolors[2][1], fourcolors[2][2], fourcolors[2][3], 1), linewidth=5)
+    lines!(ax,[Point2f0(pointsForPlot[pt]) for pt in vcat(1:5,1)], color=:black, linewidth=10)
+
+    text!(ax,[Point2f0([1.675,0.75])], text=L"$(2,1)$"; color=:red2,fontsize=70)
+    scatter!(ax,[Point2f0(pt) for pt in pointsForPlot]; color=:black, markersize=60)
+    scatter!(ax,[Point2f0([2,1])]; color=:red2,markersize=60)
+    scatter!(ax,[Point2f0([2,0])]; color=RGBA(0.2,0.2,0.75,1),markersize=60)
+    text!(ax,[Point2f0([-0.32,1.12]), Point2f0([1.665,-0.25]), Point2f0([3.675,2.065]), Point2f0([2.675,2.065]), Point2f0([-0.32,-0.25])], text=[L"(0,1)", L"(2,0)", L"(4,2)", L"(3,2)", L"(0,0)"]; color=:black,fontsize=70)
+    text!(ax,[Point2f0([1.665,-0.25])], text=[L"(2,0)"]; color=RGBA(0.2,0.2,0.75,1),fontsize=70)
+    xlims!(ax,(-0.3,4.3))
+    ylims!(ax,(-0.3,2.3))
+
+
+    save("../images/twotriangexample2.png",fig)
+end
+
+
+function plotOnetrianglesOneLine()
+    pointsForPlot = [(0,0),(2,0),(4,2),(0,1),(2,1)]
+    fig = Figure(size=(1200,1200))
+    ax = Axis(fig[1,1], aspect=1)
+    hidespines!(ax)
+    hidedecorations!(ax)
+    poly!(ax,[Point2f0(pt) for pt in pointsForPlot[1:4]]; color=RGBA{Float64}(0.1, 0.1, 0.1, 0.04), strokewidth=0)
+
+    fourcolors = map(col -> (red(col), green(col), blue(col)), distinguishable_colors(3, [RGB(1,1,1), RGB(0,0,0)], dropseed=true, lchoices = range(25, stop=50, length=15), hchoices = range(120, stop=350, length=20)))
+    triangles = [[2,3,4]]
+    poly!(ax,[Point2f0(pointsForPlot[pt]) for pt in triangles[1]]; color=RGBA{Float64}(fourcolors[1][1], fourcolors[1][2], fourcolors[1][3], 0.15),strokewidth=0)
+    lines!(ax,[Point2f0(pointsForPlot[pt]) for pt in vcat(triangles[1],triangles[1][1])], color=RGBA{Float64}(fourcolors[1][1], fourcolors[1][2], fourcolors[1][3], 1), linewidth=5)
+    lines = [[1,3]]
+    lw = 15
+    lines!(ax,[Point2f0(pointsForPlot[pt]) for pt in lines[1]], color=RGBA{Float64}(fourcolors[2][1], fourcolors[2][2], fourcolors[2][3], 1), linewidth=lw)
+    lines!(ax,[Point2f0(pointsForPlot[pt]) for pt in vcat(1:4,1)], color=:black, linewidth=10)
+
+    text!(ax,[Point2f0([2.175,0.9])], text=L"$(2,1)$"; color=:red2,fontsize=70)
+    scatter!(ax,[Point2f0(pt) for pt in pointsForPlot]; color=:black, markersize=60)
+    scatter!(ax,[Point2f0([2,1])]; color=:red2,markersize=60)
+    scatter!(ax,[Point2f0([4,2])]; color=RGBA(0.2,0.2,0.75,1),markersize=60)
+    text!(ax,[Point2f0([-0.32,1.12]), Point2f0([1.665,-0.25]), Point2f0([1.665,-0.25]), Point2f0([-0.32,-0.25])], text=[L"(0,1)", L"(2,0)", L"(2,0)",  L"(0,0)"]; color=:black,fontsize=70)
+    text!(ax,[Point2f0([3.675,2.065])], text=[L"(4,2)"]; color=RGBA(0.2,0.2,0.75,1),fontsize=70)
+    xlims!(ax,(-0.3,4.3))
+    ylims!(ax,(-0.3,2.3))
+    save("../images/onetriangonelineexample.png",fig)
 end
 
 
@@ -549,11 +607,12 @@ function runTest( ; boxsize=1, numberOfSamplingRuns=150, prefix="michaelismenton
     lineconfigurations = [[[5,1],[7,3],[8,9],[6,2],[4,10]], [[5,1],[7,3],[9,10],[6,2],[8,4]]]
 
     θ = createθcircuits(hexPoints, coefficients, lineconfigurations, triangconfigurations)
-    #plotAllCovers(hexPoints, triangconfigurations, lineconfigurations)
+    println("4: ", θ[4], "\n", "10: ", θ[10], "\n", "12: ", θ[12], "\n", "15: ", θ[15])
+    plotAllCovers(hexPoints, triangconfigurations, lineconfigurations)
     runSamplingComparison(θ, κ, aη, bη, mcoef, θ[9]; boxsize=boxsize, numberOfSamplingRuns=numberOfSamplingRuns, prefix=prefix, suffix=suffix)
 end
 
-function runTest_noDependencies( ; boxsize=1000, numberOfSamplingRuns=62, prefix="", suffix="noDependencies")
+function runTest_noDependencies( ; boxsize=1000, numberOfSamplingRuns=62, prefix="", suffix="noDependencies")               
     @var κ[1:11]
 
     hexPoints = [(0,0),(1,0),(2,0),(4,1),(4,2),(3,2),(2,2),(0,1),(3,1),(1,1)]
@@ -740,6 +799,7 @@ function plotNewtonPolytope()
     scatter!(ax, Point3f0([1.98,1.98,1]); markersize=30, color=:red3)
     display(fig)
 end
+
 
 
 function createθcircuits_weighted(points, coefficients, configurations; discretization=30)
@@ -1256,7 +1316,7 @@ function printGraphs(; prefix="linearweight", suffix="4,9")
     save("../images/$(prefix)$(suffix).png", fig)
 end
 
-computeCoverInvariants()
+plotOnetrianglesOneLine()
 #plotWeightedCovers()
 #=
 for i in [0.1,1,10,100]
