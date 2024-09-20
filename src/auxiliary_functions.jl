@@ -1,6 +1,8 @@
 module auxiliary_functions
 
+import HomotopyContinuation: @var, evaluate, Expression
 import LinearAlgebra: inv, det
+import ProgressMeter: @showprogress
 
 #=
 Here, the correct θ's are calculated for all possible circuits. 
@@ -9,7 +11,7 @@ function createθcircuits(points, coefficients, lineconfigurations, triangconfig
     m = (2,1)
     λ = []
     θ = []
-    println("$(points), $(coefficients), $(lineconfigurations), $(triangconfigurations)")
+    
     for config in triangconfigurations
             global barycenter = Matrix{Float64}(undef,3,3); barycenter[1,:] = [points[entry][1] for entry in config[1]]; barycenter[2,:] = [points[entry][2] for entry in config[1]]; barycenter[3,:] = [1 for entry in config[1]];
             global msolve = [2,1,1];
@@ -142,7 +144,6 @@ function runSamplingComparison(θ, κs, aη, bη, mcoef, θbaseline; boxsize=100
             end
         end
     end
-    println(relDict)
 
     for sampleindex in 1:numberOfSamplingRuns
         display("Run: $(sampleindex)")
@@ -341,7 +342,6 @@ function createθcircuits_weighted(points, coefficients, configurations; discret
             push!(ijkDict[ω1], sum(helper))
         end
         θdict[(i,j,k)] = ijkDict
-        println(length.(values(θdict[(i,j,k)])))
     end
     return θdict
 end
@@ -373,7 +373,6 @@ function runSamplingComparison_weighted(θ, θ_weighted, κs, aη, bη, mcoef, �
             end
         end
     end
-    println(ourmodel)
 
     for sampleindex in 1:numberOfSamplingRuns
         display("Run: $(sampleindex)")

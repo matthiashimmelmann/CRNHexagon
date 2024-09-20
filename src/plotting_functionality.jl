@@ -275,11 +275,10 @@ function printGraphs(; prefix="linearweight", suffix="4,9")
             display(e)
             continue
         end
-        display(pointnumber)
+
         points = [ourmodel[w][1] for w in sort(Float64.(keys(ourmodel)), rev=true)]
         lines!(ax, 1:length(points), points ./ pointnumber; linewidth=count>=3 ? 9-(2*count-5) : ((count==2) ? 6 : 9), linestyle=linestyles[count], color=cgrad(:Dark2_4)[count], label = "$(boxsize)")
         scatter!(ax,[0.01,0.01,0.01],[0.978,0.9785,0.979], markersize=5)
-        println((points ./ pointnumber)[1], " ", (points ./ pointnumber)[end])
         count+=1
     end
     #axislegend(ax, merge = true, unique = true, position = :rt, labelsize=26)
@@ -403,7 +402,7 @@ function plotWeightedCovers(; boxsize=1, prefix="TWOBEST", suffix="10,12,15")
         ax=Axis(fig[1,1], aspect = 1)
         heatMatrix1 = Matrix{Float64}(undef,maximum(length.(values(ourmodel1[key]))),maximum(length.(values(ourmodel1[key])))); 
         heatMatrix1 .= NaN
-        display(length.(values(ourmodel1[key])))
+
         global row = 1
         for weight in sort(collect(keys(ourmodel1[key])))
             heatMatrix1[row, 1:length(ourmodel1[key][weight])] = ourmodel1[key][weight] ./ pointnumber1
@@ -431,7 +430,7 @@ function plotWeightedCovers(; boxsize=1, prefix="TWOBEST", suffix="10,12,15")
         ax=Axis(fig[1,2], aspect = 1)
         heatMatrix2 = Matrix{Float64}(undef,maximum(length.(values(ourmodel2[key]))),maximum(length.(values(ourmodel2[key])))); 
         heatMatrix2 .= NaN
-        display(length.(values(ourmodel2[key])))
+
         global row = 1
         for weight in sort(collect(keys(ourmodel2[key])))
             heatMatrix2[row, 1:length(ourmodel2[key][weight])] = ourmodel2[key][weight] ./ pointnumber2
@@ -458,7 +457,7 @@ function plotWeightedCovers(; boxsize=1, prefix="TWOBEST", suffix="10,12,15")
         ax=Axis(fig[2,1], aspect = 1)
         heatMatrix3 = Matrix{Float64}(undef,maximum(length.(values(ourmodel3[key]))),maximum(length.(values(ourmodel3[key])))); 
         heatMatrix3 .= NaN
-        display(length.(values(ourmodel3[key])))
+
         global row = 1
         for weight in sort(collect(keys(ourmodel3[key])))
             heatMatrix3[row, 1:length(ourmodel1[key][weight])] = ourmodel3[key][weight] ./ pointnumber3
@@ -485,7 +484,7 @@ function plotWeightedCovers(; boxsize=1, prefix="TWOBEST", suffix="10,12,15")
         ax=Axis(fig[2,2], aspect = 1)
         heatMatrix4 = Matrix{Float64}(undef,maximum(length.(values(ourmodel4[key]))),maximum(length.(values(ourmodel4[key])))); 
         heatMatrix4 .= NaN
-        display(length.(values(ourmodel4[key])))
+
         global row = 1
         for weight in sort(collect(keys(ourmodel4[key])))
             heatMatrix4[row, 1:length(ourmodel4[key][weight])] = ourmodel4[key][weight] ./ pointnumber4
