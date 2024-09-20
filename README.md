@@ -1,4 +1,4 @@
-# CRNHexagon
+# CRNHexagon.jl
  
 This repository is a supplementary material for the article "Empirically Exploring the Space of Monostationarity in Dual Phosphorylation" by May Cai, Matthias Himmelmann and Birte Ostermann. Through this Julia package, we provide the data used in the article and the code with which the data was generated. To install the package, use the Julia REPL and type
 
