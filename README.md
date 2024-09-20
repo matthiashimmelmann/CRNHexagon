@@ -4,7 +4,7 @@ This repository is a supplementary material for the article "Empirically Explori
 
 ```julia
 julia> ]
-(@v1.9) julia> add CRNHexagon
+(@v1.9) julia> add https://github.com/matthiashimmelmann/CRNHexagon.jl.git
 julia> using CRNHexagon
 ```
 
