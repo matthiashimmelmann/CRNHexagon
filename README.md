@@ -9,7 +9,7 @@ julia> ]
 julia> include("CRNHexagon.jl")
 ```
 
-These commands open the module `CRNHexagon` to your local Julia installation. Afterwards, the package exports four functions. The command
+These commands open the module `CRNHexagon` in your local Julia session. Afterwards, the package exports four functions. The command
 
 ```julia
 julia> CRNHexagon.runTest()
