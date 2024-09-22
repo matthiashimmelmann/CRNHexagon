@@ -4,7 +4,8 @@ This repository is a supplementary material for the article "Empirically Explori
 
 ```julia
 julia> ]
-(@v1.9) julia> add https://github.com/matthiashimmelmann/CRNHexagon.jl.git
+(@v1.9) pkg> activate cleanCRNenv
+(cleanCRNenv) pkg> add https://github.com/matthiashimmelmann/CRNHexagon.jl.git
 julia> using CRNHexagon
 ```
 
@@ -20,7 +21,7 @@ generates the data from the relative comparison with the cover used in the artic
 julia> computeCoverInvariants()
 ```
 
-which has the parameters `boxsizes=["0.1","1","10","100"]`, `prefix="michaelismentontest"` and `suffix="NEW"`. This method outputs the LaTex code for the two tables used in the article associated with this article. Moreover,
+which has the parameters `boxsizes=["0.1","1","10","100"]`, `prefix="michaelismentontest"` and `suffix="NEW"`. This method outputs the LaTex code for Table 1 and Table 2 used in the article associated with this repository (see Section 3). Moreover,
 
 ```julia
 julia> printValues()
