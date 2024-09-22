@@ -11,88 +11,91 @@ function createθcircuits(points, coefficients, lineconfigurations, triangconfig
     m = (2,1)
     λ = []
     θ = []
-    
+
     for config in triangconfigurations
-            global barycenter = Matrix{Float64}(undef,3,3); barycenter[1,:] = [points[entry][1] for entry in config[1]]; barycenter[2,:] = [points[entry][2] for entry in config[1]]; barycenter[3,:] = [1 for entry in config[1]];
-            global msolve = [2,1,1];
-            global λ1 = inv(barycenter)*msolve;
-            global λ1 = collect(λ1 / sum(λ1));
+        global barycenter = Matrix{Float64}(undef,3,3); barycenter[1,:] = [points[entry][1] for entry in config[1]]; barycenter[2,:] = [points[entry][2] for entry in config[1]]; barycenter[3,:] = [1 for entry in config[1]];
+        global msolve = [2,1,1];
+        global λ1 = inv(barycenter)*msolve;
+        global λ1 = collect(λ1 / sum(λ1));
 
-            barycenter[1,:] = [points[entry][1] for entry in config[2]]; barycenter[2,:] = [points[entry][2] for entry in config[2]];
-            global λ2 = inv(barycenter)*msolve;
-            global λ2 = collect(λ2 / sum(λ2));
+        barycenter[1,:] = [points[entry][1] for entry in config[2]]; barycenter[2,:] = [points[entry][2] for entry in config[2]];
+        global λ2 = inv(barycenter)*msolve;
+        global λ2 = collect(λ2 / sum(λ2));
 
-            global barycenterline = Matrix{Float64}(undef,2,2); barycenterline[1,:] = [points[entry][1] for entry in config[3]]; barycenterline[2,:] = [points[entry][2] for entry in config[3]]; 
-            if det(barycenterline) == 0
-                global λ3 = [0.5,0.5]
-            else
-                global λ3 = inv(barycenterline)*[2,1];
-                global λ3 = collect(λ3 / sum(λ3))
-            end
+        global barycenterline = Matrix{Float64}(undef,2,2); barycenterline[1,:] = [points[entry][1] for entry in config[3]]; barycenterline[2,:] = [points[entry][2] for entry in config[3]]; 
+        if det(barycenterline) == 0
+            global λ3 = [0.5,0.5]
+        else
+            global λ3 = inv(barycenterline)*[2,1];
+            global λ3 = collect(λ3 / sum(λ3))
+        end
 
-            barycenterline[1,:] = [points[entry][1] for entry in config[4]]; barycenterline[2,:] = [points[entry][2] for entry in config[4]]; 
-            if det(barycenterline) == 0
-                global λ4 = [0.5,0.5]
-            else
-                global λ4 = inv(barycenterline)*[2,1];
-                global λ4 = collect(λ4 / sum(λ4))
-            end
-
-            global θ1 = prod([(coefficients[config[1][i]]/λ1[i])^(λ1[i]) for i in 1:length(config[1])])
-            global θ2 = prod([(coefficients[config[2][i]]/λ2[i])^(λ2[i]) for i in 1:length(config[2])])
-            global θ3 = prod([(coefficients[config[3][i]]/λ3[i])^(λ3[i]) for i in 1:length(config[3])])
-            global θ4 = prod([(coefficients[config[4][i]]/λ4[i])^(λ4[i]) for i in 1:length(config[4])])
-            push!(θ,θ1+θ2+θ3+θ4)
+        barycenterline[1,:] = [points[entry][1] for entry in config[4]]; barycenterline[2,:] = [points[entry][2] for entry in config[4]]; 
+        if det(barycenterline) == 0
+            global λ4 = [0.5,0.5]
+        else
+            global λ4 = inv(barycenterline)*[2,1];
+            global λ4 = collect(λ4 / sum(λ4))
+        end
+        
+        println("coefficients: ", coefficients)
+        display("λ: ", λ1)
+        display("Array: ", [(coefficients[config[1][i]]/λ1[i])^(λ1[i]) for i in 1:length(config[1])])
+        global θ1 = prod([(coefficients[config[1][i]]/λ1[i])^(λ1[i]) for i in 1:length(config[1])])
+        global θ2 = prod([(coefficients[config[2][i]]/λ2[i])^(λ2[i]) for i in 1:length(config[2])])
+        global θ3 = prod([(coefficients[config[3][i]]/λ3[i])^(λ3[i]) for i in 1:length(config[3])])
+        global θ4 = prod([(coefficients[config[4][i]]/λ4[i])^(λ4[i]) for i in 1:length(config[4])])
+        push!(θ,θ1+θ2+θ3+θ4)
     end
 
     for config in lineconfigurations
-            global barycenterline = Matrix{Float64}(undef,2,2); barycenterline[1,:] = [points[entry][1] for entry in config[1]]; barycenterline[2,:] = [points[entry][2] for entry in config[1]]; 
-            if det(barycenterline) == 0
-                global λ1=[0.5,0.5]
-            else
-                global λ1 = inv(barycenterline)*[2,1];
-                global λ1 = collect(λ1 / sum(λ1))
-            end
+        global barycenterline = Matrix{Float64}(undef,2,2); barycenterline[1,:] = [points[entry][1] for entry in config[1]]; barycenterline[2,:] = [points[entry][2] for entry in config[1]]; 
+        if det(barycenterline) == 0
+            global λ1=[0.5,0.5]
+        else
+            global λ1 = inv(barycenterline)*[2,1];
+            global λ1 = collect(λ1 / sum(λ1))
+        end
 
-            barycenterline[1,:] = [points[entry][1] for entry in config[2]]; barycenterline[2,:] = [points[entry][2] for entry in config[2]]; 
-            if det(barycenterline) == 0
-                global λ2=[0.5,0.5]
-            else
-                global λ2 = inv(barycenterline)*[2,1];
-                global λ2 = collect(λ2 / sum(λ2))
-            end
+        barycenterline[1,:] = [points[entry][1] for entry in config[2]]; barycenterline[2,:] = [points[entry][2] for entry in config[2]]; 
+        if det(barycenterline) == 0
+            global λ2=[0.5,0.5]
+        else
+            global λ2 = inv(barycenterline)*[2,1];
+            global λ2 = collect(λ2 / sum(λ2))
+        end
 
-            barycenterline[1,:] = [points[entry][1] for entry in config[3]]; barycenterline[2,:] = [points[entry][2] for entry in config[3]]; 
-            if det(barycenterline) == 0
-                global λ3=[0.5,0.5]
-            else
-                global λ3 = inv(barycenterline)*[2,1];
-                global λ3 = collect(λ3 / sum(λ3))
-            end
+        barycenterline[1,:] = [points[entry][1] for entry in config[3]]; barycenterline[2,:] = [points[entry][2] for entry in config[3]]; 
+        if det(barycenterline) == 0
+            global λ3=[0.5,0.5]
+        else
+            global λ3 = inv(barycenterline)*[2,1];
+            global λ3 = collect(λ3 / sum(λ3))
+        end
 
-            barycenterline[1,:] = [points[entry][1] for entry in config[4]]; barycenterline[2,:] = [points[entry][2] for entry in config[4]]; 
-            if det(barycenterline) == 0
-                global λ4=[0.5,0.5]
-            else
-                global λ4 = inv(barycenterline)*[2,1];
-                global λ4 = collect(λ4 / sum(λ4))
-            end
+        barycenterline[1,:] = [points[entry][1] for entry in config[4]]; barycenterline[2,:] = [points[entry][2] for entry in config[4]]; 
+        if det(barycenterline) == 0
+            global λ4=[0.5,0.5]
+        else
+            global λ4 = inv(barycenterline)*[2,1];
+            global λ4 = collect(λ4 / sum(λ4))
+        end
 
-            global λ5 = [0.5,0.5]
-            barycenterline[1,:] = [points[entry][1] for entry in config[5]]; barycenterline[2,:] = [points[entry][2] for entry in config[5]]; 
-            if det(barycenterline) == 0
-                global λ5=[0.5,0.5]
-            else
-                global λ5 = inv(barycenterline)*[2,1];
-                global λ5 = collect(λ5 / sum(λ5))
-            end
+        global λ5 = [0.5,0.5]
+        barycenterline[1,:] = [points[entry][1] for entry in config[5]]; barycenterline[2,:] = [points[entry][2] for entry in config[5]]; 
+        if det(barycenterline) == 0
+            global λ5=[0.5,0.5]
+        else
+            global λ5 = inv(barycenterline)*[2,1];
+            global λ5 = collect(λ5 / sum(λ5))
+        end
 
-            global θ1 = prod([(coefficients[config[1][i]]/λ1[i])^(λ1[i]) for i in 1:length(config[1])])
-            global θ2 = prod([(coefficients[config[2][i]]/λ2[i])^(λ2[i]) for i in 1:length(config[2])])
-            global θ3 = prod([(coefficients[config[3][i]]/λ3[i])^(λ3[i]) for i in 1:length(config[3])])
-            global θ4 = prod([(coefficients[config[4][i]]/λ4[i])^(λ4[i]) for i in 1:length(config[4])])
-            global θ5 = prod([(coefficients[config[5][i]]/λ5[i])^(λ5[i]) for i in 1:length(config[5])])
-            push!(θ,θ1+θ2+θ3+θ4+θ5)
+        global θ1 = prod([(coefficients[config[1][i]]/λ1[i])^(λ1[i]) for i in 1:length(config[1])])
+        global θ2 = prod([(coefficients[config[2][i]]/λ2[i])^(λ2[i]) for i in 1:length(config[2])])
+        global θ3 = prod([(coefficients[config[3][i]]/λ3[i])^(λ3[i]) for i in 1:length(config[3])])
+        global θ4 = prod([(coefficients[config[4][i]]/λ4[i])^(λ4[i]) for i in 1:length(config[4])])
+        global θ5 = prod([(coefficients[config[5][i]]/λ5[i])^(λ5[i]) for i in 1:length(config[5])])
+        push!(θ,θ1+θ2+θ3+θ4+θ5)
     end
 
     return θ
