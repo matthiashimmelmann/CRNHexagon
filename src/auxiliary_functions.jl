@@ -2,7 +2,6 @@ module auxiliary_functions
 
 import HomotopyContinuation: @var, evaluate, Expression
 import LinearAlgebra: inv, det
-import ProgressMeter: @showprogress
 
 #=
 Here, the correct θ's are calculated for all possible circuits. 
@@ -38,14 +37,6 @@ function createθcircuits(points, coefficients, lineconfigurations, triangconfig
             global λ4 = collect(λ4 / sum(λ4))
         end
         
-        display(Vector{Expression}(coefficients))
-        sleep(5)
-        display(collect(config))
-        sleep(5)
-        display(λ1)
-        sleep(5)
-        display((coefficients[config[1][1]]/λ1[1])^(λ1[1]))
-        sleep(5)
         θ1 = prod([(coefficients[config[1][i]]/λ1[i])^(λ1[i]) for i in 1:length(config[1])])
         θ2 = prod([(coefficients[config[2][i]]/λ2[i])^(λ2[i]) for i in 1:length(config[2])])
         θ3 = prod([(coefficients[config[3][i]]/λ3[i])^(λ3[i]) for i in 1:length(config[3])])
@@ -157,7 +148,7 @@ function runSamplingComparison(θ, κs, aη, bη, mcoef, θbaseline; boxsize=100
         display("Run: $(sampleindex)")
         global sampling = filter(sampler -> !any(t->isapprox(t,0), sampler) && evaluate(aη, κs=>sampler)>0 && evaluate(bη, κs=>sampler)<0, [boxsize * abs.(rand(Float64, length(κs))) for _ in 1:1000000])
         global pointnumber = pointnumber+length(sampling)
-        @showprogress for ind in 1:length(sampling)
+        for ind in 1:length(sampling)
             sampler = sampling[ind]
             mval = evaluate(mcoef, κs=>sampler)
             prevval = evaluate(θbaseline, κs=>sampler)
@@ -386,7 +377,7 @@ function runSamplingComparison_weighted(θ, θ_weighted, κs, aη, bη, mcoef, �
         display("Run: $(sampleindex)")
         global sampling = filter(sampler -> !any(t->isapprox(t,0), sampler) && evaluate(aη,κs=>sampler)>0 && evaluate(bη,κs=>sampler)<0, [boxsize * abs.(rand(Float64,length(κs))) for _ in 1:1000000])
         global pointnumber = pointnumber+length(sampling)
-        @showprogress for ind in 1:length(sampling)
+        for ind in 1:length(sampling)
             sampler = sampling[ind]
             mval = real(evaluate(mcoef,κs=>sampler))
             for key in θkeys

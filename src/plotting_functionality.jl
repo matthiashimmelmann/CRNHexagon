@@ -4,8 +4,6 @@ import GLMakie: axislegend, rotate!, text!, Colorbar, heatmap, heatmap!, xlims!,
 import Colors: distinguishable_colors, red, green, blue, colormap
 import Plots: cgrad
 import Polyhedra: Mesh, polyhedron, convexhull
-import LaTeXStrings: @L_str
-import ProgressMeter: @showprogress
 
 #=
 Here, all 16 configurations are plotted and saved. The colors are optimized with respect to distinguishability.
@@ -22,9 +20,9 @@ function plotAllCovers(points, triangconfigurations, lineconfigurations)
     poly!(ax,[Point2f0(pt) for pt in pointsForPlot]; color=RGBA{Float64}(0.1, 0.1, 0.1, 0.04), strokewidth=0)
     lines!(ax,[Point2f0(pt) for pt in pointsForPlot], color=:black, linewidth=10)
     scatter!(ax,[Point2f0([2,1])]; color=:red2,markersize=60)
-    text!(ax,[Point2f0([2+0.1,1-0.1])], text=L"$m$"; color=:red2,fontsize=70)
+    text!(ax,[Point2f0([2+0.1,1-0.1])], text="m"; color=:red2,fontsize=70)
     scatter!(ax,[Point2f0(pt) for pt in points]; color=:black, markersize=60)
-    text!(ax,[Point2f0([1+0.1,1-0.1]), Point2f0([3+0.1,1-0.1]), Point2f0([1+0.1,0+0.04]), Point2f0([3-0.05,2-0.19]), Point2f0([0+0.1,0+0.04]), Point2f0([2+0.17,0-0.05]), Point2f0([4-0.1,1-0.17]), Point2f0([4-0.34,2-0.16]), Point2f0([2-0.05,2-0.16]), Point2f0([0+0.1,1-0.1])], text=[L"$\iota_1$", L"$\iota_2$", L"$\beta_1$", L"$\beta_2$", L"$\alpha_1$", L"$\alpha_2$", L"$\alpha_3$", L"$\alpha_4$", L"$\alpha_5$", L"$\alpha_6$"]; color=:black,fontsize=70)
+    text!(ax,[Point2f0([1+0.1,1-0.1]), Point2f0([3+0.1,1-0.1]), Point2f0([1+0.1,0+0.04]), Point2f0([3-0.05,2-0.19]), Point2f0([0+0.1,0+0.04]), Point2f0([2+0.17,0-0.05]), Point2f0([4-0.1,1-0.17]), Point2f0([4-0.34,2-0.16]), Point2f0([2-0.05,2-0.16]), Point2f0([0+0.1,1-0.1])], text=["iota_1", "iota_2", "beta_1", "beta_2", "alpha_1", "alpha_2", "alpha_3", "alpha_4", "alpha_5", "alpha_6"]; color=:black,fontsize=70)
 
     save("../images/NEWtriangbaseconf.png",fig)
 
@@ -86,8 +84,8 @@ function plotAllCovers(points, triangconfigurations, lineconfigurations)
         
         scatter!(ax,[Point2f0([2,1])]; color=:red2,markersize=60)
         scatter!(ax,[Point2f0(pt) for pt in points]; color=:black,markersize=60)
-        text!(ax,[Point2f0([0.1,1.8])], text=L"\mathcal{CC}({%$(findfirst(t->t==config,triangconfigurations))})"; color=:black,fontsize=85)
-        save("../images/NEWtriangnoline$(findfirst(t->t==config,triangconfigurations)).png",fig)
+        text!(ax,[Point2f0([0.1,1.8])], text="CC({$(findfirst(t->t==config,triangconfigurations))})"; color=:black,fontsize=85)
+        save("../images/NEWtriangnoline(findfirst(t->t==config,triangconfigurations)).png",fig)
     end
 
     #This method plots the configurations containing no 2-dimensional simplices.
@@ -130,8 +128,8 @@ function plotAllCovers(points, triangconfigurations, lineconfigurations)
 
         scatter!(ax,[Point2f0([2,1])]; color=:red2,markersize=60)
         scatter!(ax,[Point2f0(pt) for pt in points]; color=:black,markersize=60)
-        text!(ax,[Point2f0([0.1,1.8])], text=L"\mathcal{CC}({%$(14+findfirst(t->t==config,lineconfigurations))})"; color=:black,fontsize=85)
-        save("../images/NEWtriangline$(14+findfirst(t->t==config,lineconfigurations)).png",fig)
+        text!(ax,[Point2f0([0.1,1.8])], text="CC({$(14+findfirst(t->t==config,lineconfigurations))})"; color=:black,fontsize=85)
+        save("../images/NEWtriangline(14+findfirst(t->t==config,lineconfigurations)).png",fig)
     end
 end
 
@@ -415,7 +413,7 @@ function plotWeightedCovers(; boxsize=1, prefix="TWOBEST", suffix="10,12,15")
         hidedecorations!(ax)
         xlims!(ax, (-0.01,18))
         ylims!(ax, (-0.25,18.25))
-        #text!(ax, [0.2,0.2,17.3], [-0.25,17.55,-0.25]; text=[L"10", L"15", L"4"], fontsize=38)
+        #text!(ax, [0.2,0.2,17.3], [-0.25,17.55,-0.25]; text=["10", "15", "4"], fontsize=38)
 
 
         pointarray1 = []
@@ -443,7 +441,7 @@ function plotWeightedCovers(; boxsize=1, prefix="TWOBEST", suffix="10,12,15")
         hidedecorations!(ax)
         xlims!(ax, (-0.01,18))
         ylims!(ax, (-0.25,18.25))
-        #text!(ax, [0.2,0.2,17.3], [-0.25,17.55,-0.25]; text=[L"12", L"15", L"10"], fontsize=38)
+        #text!(ax, [0.2,0.2,17.3], [-0.25,17.55,-0.25]; text=["12", "15", "10"], fontsize=38)
 
         pointarray2 = []
         for weight in keys(ourmodel2[key])
@@ -470,7 +468,7 @@ function plotWeightedCovers(; boxsize=1, prefix="TWOBEST", suffix="10,12,15")
         hidedecorations!(ax)
         xlims!(ax, (-0.01,18))
         ylims!(ax, (-0.25,18.25))
-        #text!(ax, [0.2,0.2,17.3], [-0.25,17.55,-0.25]; text=[L"4", L"9", L"15"], fontsize=38)
+        #text!(ax, [0.2,0.2,17.3], [-0.25,17.55,-0.25]; text=["4", "9", "15"], fontsize=38)
 
         pointarray3 = []
         for weight in keys(ourmodel3[key])
@@ -497,7 +495,7 @@ function plotWeightedCovers(; boxsize=1, prefix="TWOBEST", suffix="10,12,15")
         hidedecorations!(ax)
         xlims!(ax, (-0.01,18))
         ylims!(ax, (-0.25,18.25))
-        #text!(ax, [0.2,0.2,17.3], [-0.25,17.55,-0.25]; text=[L"4", L"9", L"15"], fontsize=38)
+        #text!(ax, [0.2,0.2,17.3], [-0.25,17.55,-0.25]; text=["4", "9", "15"], fontsize=38)
 
         pointarray4 = []
         for weight in keys(ourmodel4[key])
@@ -525,7 +523,7 @@ function empiricalComparisonOfTwoCovers(θsuggestion, θbaseline, K, κ, aη, b�
     for sampleindex in 1:numberOfSamplingRuns
         display("Run: $(sampleindex)")
         global sampling = filter(sampler -> !any(t->isapprox(t,0), sampler) && evaluate(aη,vcat(K,[κ[3],κ[6],κ[9],κ[12]])=>sampler)>0 && evaluate(bη,vcat(K,[κ[3],κ[6],κ[9],κ[12]])=>sampler)<0, [boxsizes .* abs.(rand(Float64,8)) for _ in 1:1000000])
-        @showprogress for ind in 1:length(sampling)
+        for ind in 1:length(sampling)
             sampler = sampling[ind]
             mval = evaluate(mcoef,vcat(K,[κ[3],κ[6],κ[9],κ[12]])=>sampler)
             prevval = evaluate(θbaseline, vcat(K,[κ[3],κ[6],κ[9],κ[12]])=>sampler)
@@ -544,7 +542,7 @@ function empiricalComparisonOfTwoCovers(θsuggestion, θbaseline, K, κ, aη, b�
     end
     
     fig = Figure(size=(1200,1200))
-    ax = [Axis(fig[1,1]; xlabel = L"K_1", ylabel=L"K_2"), Axis(fig[1,2]; xlabel = L"K_3", ylabel=L"K_4"), Axis(fig[2,1]; xlabel = L"$\kappa_3$", ylabel=L"$\kappa_6$"), Axis(fig[2,2]; xlabel = L"$\kappa_9$", ylabel=L"$\kappa_{12}$")]
+    ax = [Axis(fig[1,1]; xlabel = "K_1", ylabel="K_2"), Axis(fig[1,2]; xlabel = "K_3", ylabel="K_4"), Axis(fig[2,1]; xlabel = "kappa_3", ylabel="kappa_6"), Axis(fig[2,2]; xlabel = "kappa_9", ylabel="kappa_{12}")]
     for pic in 1:4
         scatter!(ax[pic], [Point2f0(pt[(2*(pic-1)+1):(2*(pic-1)+2)]) for pt in vector_both_wins]; color=:lightgrey, markersize=1, markerstrokewidth=0)
         scatter!(ax[pic], [Point2f0(pt[(2*(pic-1)+1):(2*(pic-1)+2)]) for pt in vector_no_wins]; color=:red3, markersize=1, markerstrokewidth=0)
@@ -574,9 +572,9 @@ function plottriangle()
     poly!(ax,[Point2f0(pt) for pt in pointsForPlot]; color=RGBA{Float64}(0.1, 0.1, 0.1, 0.04), strokewidth=0)
     lines!(ax,[Point2f0(pt) for pt in pointsForPlot[vcat(1:3,1)]], color=:black, linewidth=10)
     scatter!(ax,[Point2f0([2,1])]; color=:red2,markersize=60)
-    text!(ax,[Point2f0([1.675,0.75])], text=L"$(2,1)$"; color=:red2,fontsize=70)
+    text!(ax,[Point2f0([1.675,0.75])], text="(2,1)"; color=:red2,fontsize=70)
     scatter!(ax,[Point2f0(pt) for pt in pointsForPlot]; color=:black, markersize=60)
-    text!(ax,[Point2f0([-0.32,1.09]), Point2f0([1.665,-0.25]), Point2f0([3.675,2.065])], text=[L"(0,1)", L"(2,0)", L"(4,2)"]; color=:black,fontsize=70)
+    text!(ax,[Point2f0([-0.32,1.09]), Point2f0([1.665,-0.25]), Point2f0([3.675,2.065])], text=["(0,1)", "(2,0)", "(4,2)"]; color=:black,fontsize=70)
     xlims!(ax,(-0.3,4.3))
     ylims!(ax,(-0.3,2.3))
     save("../images/triangexample.png",fig)
@@ -598,12 +596,12 @@ function plotTwotriangles()
     lines!(ax,[Point2f0(pointsForPlot[pt]) for pt in vcat(triangles[2],triangles[2][1])], color=RGBA{Float64}(fourcolors[2][1], fourcolors[2][2], fourcolors[2][3], 1), linewidth=5)
     lines!(ax,[Point2f0(pointsForPlot[pt]) for pt in vcat(1:5,1)], color=:black, linewidth=10)
 
-    text!(ax,[Point2f0([1.675,0.75])], text=L"$(2,1)$"; color=:red2,fontsize=70)
+    text!(ax,[Point2f0([1.675,0.75])], text="(2,1)"; color=:red2,fontsize=70)
     scatter!(ax,[Point2f0(pt) for pt in pointsForPlot]; color=:black, markersize=60)
     scatter!(ax,[Point2f0([2,1])]; color=:red2,markersize=60)
     scatter!(ax,[Point2f0([2,0])]; color=RGBA(0.2,0.2,0.75,1),markersize=60)
-    text!(ax,[Point2f0([-0.32,1.12]), Point2f0([1.665,-0.25]), Point2f0([3.675,2.065]), Point2f0([2.675,2.065]), Point2f0([-0.32,-0.25])], text=[L"(0,1)", L"(2,0)", L"(4,2)", L"(3,2)", L"(0,0)"]; color=:black,fontsize=70)
-    text!(ax,[Point2f0([1.665,-0.25])], text=[L"(2,0)"]; color=RGBA(0.2,0.2,0.75,1),fontsize=70)
+    text!(ax,[Point2f0([-0.32,1.12]), Point2f0([1.665,-0.25]), Point2f0([3.675,2.065]), Point2f0([2.675,2.065]), Point2f0([-0.32,-0.25])], text=["(0,1)", "(2,0)", "(4,2)", "(3,2)", "(0,0)"]; color=:black,fontsize=70)
+    text!(ax,[Point2f0([1.665,-0.25])], text=["(2,0)"]; color=RGBA(0.2,0.2,0.75,1),fontsize=70)
     xlims!(ax,(-0.3,4.3))
     ylims!(ax,(-0.3,2.3))
 
@@ -629,12 +627,12 @@ function plotOnetrianglesOneLine()
     lines!(ax,[Point2f0(pointsForPlot[pt]) for pt in lines[1]], color=RGBA{Float64}(fourcolors[2][1], fourcolors[2][2], fourcolors[2][3], 1), linewidth=lw)
     lines!(ax,[Point2f0(pointsForPlot[pt]) for pt in vcat(1:4,1)], color=:black, linewidth=10)
 
-    text!(ax,[Point2f0([2.175,0.9])], text=L"$(2,1)$"; color=:red2,fontsize=70)
+    text!(ax,[Point2f0([2.175,0.9])], text="(2,1)"; color=:red2,fontsize=70)
     scatter!(ax,[Point2f0(pt) for pt in pointsForPlot]; color=:black, markersize=60)
     scatter!(ax,[Point2f0([2,1])]; color=:red2,markersize=60)
     scatter!(ax,[Point2f0([4,2])]; color=RGBA(0.2,0.2,0.75,1),markersize=60)
-    text!(ax,[Point2f0([-0.32,1.12]), Point2f0([1.665,-0.25]), Point2f0([1.665,-0.25]), Point2f0([-0.32,-0.25])], text=[L"(0,1)", L"(2,0)", L"(2,0)",  L"(0,0)"]; color=:black,fontsize=70)
-    text!(ax,[Point2f0([3.675,2.065])], text=[L"(4,2)"]; color=RGBA(0.2,0.2,0.75,1),fontsize=70)
+    text!(ax,[Point2f0([-0.32,1.12]), Point2f0([1.665,-0.25]), Point2f0([1.665,-0.25]), Point2f0([-0.32,-0.25])], text=["(0,1)", "(2,0)", "(2,0)",  "(0,0)"]; color=:black,fontsize=70)
+    text!(ax,[Point2f0([3.675,2.065])], text=["(4,2)"]; color=RGBA(0.2,0.2,0.75,1),fontsize=70)
     xlims!(ax,(-0.3,4.3))
     ylims!(ax,(-0.3,2.3))
     save("../images/onetriangonelineexample.png",fig)
