@@ -38,10 +38,8 @@ function createθcircuits(points, coefficients, lineconfigurations, triangconfig
             global λ4 = collect(λ4 / sum(λ4))
         end
         
-        println("coefficients: ", coefficients)
-        println("λ: ", λ1)
-        println("Array: ", [(coefficients[config[1][i]]/λ1[i])^(λ1[i]) for i in 1:length(config[1])])
         global θ1 = prod([(coefficients[config[1][i]]/λ1[i])^(λ1[i]) for i in 1:length(config[1])])
+        display(θ1)
         global θ2 = prod([(coefficients[config[2][i]]/λ2[i])^(λ2[i]) for i in 1:length(config[2])])
         global θ3 = prod([(coefficients[config[3][i]]/λ3[i])^(λ3[i]) for i in 1:length(config[3])])
         global θ4 = prod([(coefficients[config[4][i]]/λ4[i])^(λ4[i]) for i in 1:length(config[4])])
