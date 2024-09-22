@@ -38,7 +38,7 @@ function createθcircuits(points, coefficients, lineconfigurations, triangconfig
             global λ4 = collect(λ4 / sum(λ4))
         end
         
-        display(collect(coefficients))
+        display(Vector{Expression}(coefficients))
         sleep(5)
         display(collect(config))
         sleep(5)
