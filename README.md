@@ -1,6 +1,6 @@
 # CRNHexagon.jl
  
-This repository is a supplementary material for the article "Empirically Exploring the Space of Monostationarity in Dual Phosphorylation" by May Cai, Matthias Himmelmann and Birte Ostermann. Through this Julia package, we provide the data used in the article and the code with which the data was generated. To install the package, you first need to clone this repository to your local machine. Then, open the Julia REPL and navigate to the folder "CRNHexagon" that was just created via the command `cd("CRNHexagon")` (this depends on the location of your Julia installation). In the subfolder "src", where the source code is located. There, use the following line of commands to 
+This repository is a supplementary material for the article "Empirically Exploring the Space of Monostationarity in Dual Phosphorylation" by May Cai, Matthias Himmelmann and Birte Ostermann. Through this Julia package, we provide the data used in the article and the code with which the data was generated. To install the package, you first need to clone this repository to your local machine. Then, open the Julia REPL and navigate to the folder "CRNHexagon" that was just created via the command `cd("CRNHexagon")` (this depends on the location of your Julia installation). In the subfolder "src" (reachable with `cd("src")`), where the source code is located. There, use the following line of commands to 
 
 ```julia
 julia> ]
