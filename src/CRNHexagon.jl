@@ -64,9 +64,8 @@ function runTest_weighted(coversToCompare; boxsize=1, numberOfSamplingRuns=100, 
         [[1,5],[7,3],[9,10],[6,2],[8,4]]."))
     , coversToCompare)
 
-    oldθ = auxiliary_functions.createθcircuits(hexPoints, coefficients, [], coversToCompare)
     θ_weighted = auxiliary_functions.createθcircuits_weighted(hexPoints, coefficients, coversToCompare; discretization=discretization)
-    auxiliary_functions.runSamplingComparison_weighted([], θ_weighted, κ, aη, bη, mcoef, oldθ; boxsize=boxsize, numberOfSamplingRuns=numberOfSamplingRuns, prefix=prefix, suffix=suffix, discretization=discretization)    
+    auxiliary_functions.runSamplingComparison_weighted([], θ_weighted, κ, aη, bη, mcoef; boxsize=boxsize, numberOfSamplingRuns=numberOfSamplingRuns, prefix=prefix, suffix=suffix, discretization=discretization)    
 end
 
 #=
@@ -89,7 +88,8 @@ function computeCoverInvariants( ; boxsizes=["0.1","1","10","100"], prefix="mich
             continue
         end
         println("$(boxsize): $(pointnumber) points contained.")
-        
+        global allmodeldots, ourmodeldots, prevmodeldots, nomodeldots, puremodel = [[] for _ in 1:length(onlyone)], [[] for _ in 1:length(onlyone)], [[] for _ in 1:length(onlyone)], [[] for _ in 1:length(onlyone)], [[] for _ in 1:length(onlyone)]
+
         permille_allmodels, permille_ourmodel, permille_prevmodel, permille_nomodel, percent_ourmodel_pure = round.(round.(10000*allpoints ./ pointnumber, digits=2)/10000, digits=5), round.(100*ourmodel ./ pointnumber, digits=2), round.(100*prevmodel ./ pointnumber, digits=2), round.(100*nomodel ./ pointnumber, digits=2), round.(100 * (pointnumber .- (nomodel .+ prevmodel)) ./ pointnumber, digits=3)
         foreach(i->push!(allmodeldots[i], permille_allmodels[i]), 1:length(permille_allmodels))
         foreach(i->push!(ourmodeldots[i], permille_ourmodel[i]), 1:length(permille_ourmodel))

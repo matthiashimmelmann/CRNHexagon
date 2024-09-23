@@ -347,7 +347,7 @@ end
 
 
 
-function runSamplingComparison_weighted(θ, θ_weighted, κs, aη, bη, mcoef, θbaseline; discretization, boxsize=100, numberOfSamplingRuns=250, prefix="linearweight", suffix="")
+function runSamplingComparison_weighted(θ, θ_weighted, κs, aη, bη, mcoef; discretization, boxsize=100, numberOfSamplingRuns=250, prefix="linearweight", suffix="")
     #If the file exists, we add to the previously run tests. Else, we set everything to 0.
     θkeys = keys(θ_weighted)
     ourmodel = Dict()
